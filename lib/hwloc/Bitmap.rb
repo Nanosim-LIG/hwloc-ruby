@@ -50,6 +50,7 @@ module Hwloc
   attach_function :hwloc_bitmap_compare, [:bitmap, :bitmap], :int
 
   class Bitmap
+    include Enumerable
     attr_reader :ptr
 
     def initialize( *args )
