@@ -1,5 +1,8 @@
 module Hwloc
 
+  class ObjError < Error
+  end
+
   ObjType = enum( :obj_type, [
     :OBJ_SYSTEM,
     :OBJ_MACHINE,
@@ -26,6 +29,11 @@ module Hwloc
     :OBJ_CACHE_UNIFIED,
     :OBJ_CACHE_DATA,
     :OBJ_CACHE_INSTRUCTION
+  ] )
+
+  ObjBrigeType = enum( :obj_bridge_type, [
+    :OBJ_BRIDGE_HOST,
+    :OBJ_BRIDGE_PCI
   ] )
 
   ObjOsdevType = enum( :obj_osdev_type, [
@@ -67,6 +75,66 @@ module Hwloc
            :page_types, :pointer
   end
 
+  class CacheAttr < FFI::Struct
+    layout :size,          :uint64,
+           :depth,         :uint,
+           :linesize,      :uint,
+           :associativity, :int,
+           :type,          :obj_cache_type
+  end
+
+  class GroupAttr < FFI::Struct
+    layout :depth, :uint
+  end
+
+  class PcidevAttr < FFI::Struct
+    layout :domain,       :ushort,
+           :bus,          :uchar,
+           :dev,          :uchar,
+           :func,         :uchar,
+           :class_id,     :ushort,
+           :vendor_id,    :ushort,
+           :device_id,    :ushort,
+           :subvendor_id, :ushort,
+           :subdevice_id, :ushort,
+           :revision,     :uchar,
+           :linkspeed,    :float
+  end
+
+  class AnonBridgeAttrUpstream < FFI::Union
+    layout :pci, PcidevAttr
+  end
+
+  class AnonBridgeAttrDownstreamStruct < FFI::Struct
+    layout :domain,          :ushort,
+           :secondary_bus,   :uchar,
+           :subordinate_bus, :uchar
+  end
+
+  class AnonBridgeAttrDownstream < FFI::Union
+    layout :pci, AnonBridgeAttrDownstreamStruct
+  end
+
+  class BridgeAttr < FFI::Struct
+    layout :upstream,        AnonBridgeAttrUpstream,
+           :upstream_type,   :obj_bridge_type,
+           :downstream,      AnonBridgeAttrDownstream,
+           :downstream_type, :obj_bridge_type,
+           :depth,           :uint
+  end
+
+  class OsdevAttr < FFI::Struct
+    layout :type, :obj_osdev_type
+  end
+
+  class ObjAttr < FFI::Union
+    layout :cache,  CacheAttr,
+           :group,  GroupAttr,
+           :pcidev, PcidevAttr,
+           :bridge, BridgeAttr,
+           :osdev,  OsdevAttr
+  end
+
   class Obj < FFI::Struct
   end
 
@@ -76,7 +144,7 @@ module Hwloc
       :os_index,         :uint,
       :name,             :string,
       :memory,           ObjMemory,
-      :attr,             :pointer,
+      :attr,             ObjAttr.ptr,
       :depth,            :uint,
       :logical_index,    :uint,
       :os_level,         :int,
@@ -115,6 +183,10 @@ module Hwloc
       end
     end
 
+    def inspect
+      return "<#{self.class}:#{"0x00%x" % (object_id << 1)} type=#{type} logical_index=#{logical_index} ptr=#{to_ptr}>"
+    end
+
     layout_array.each_slice(2) { |f|
       case f[1]
       when :cpuset
@@ -147,6 +219,20 @@ module Hwloc
       end
     end
 
+    def each_obj(&block)
+      if block then
+        block.call self
+        children.each { |c|
+          c.each_obj(&block)
+        }
+        return self
+      else
+        to_enum(:each_obj)
+      end
+    end
+
+    alias traverse each_obj
+
     def distances
       distances_count = self[:distances_count]
       if distances_count == 0 then
@@ -161,8 +247,30 @@ module Hwloc
       if infos_count == 0 then
         return []
       else
-        return infos_count.times.collect { |i| ObjInfo::new(self[:infos] + i*ObjInfo.size) }
+        inf_array = infos_count.times.collect { |i| ObjInfo::new(self[:infos] + i*ObjInfo.size) }
+	inf_h = {}
+	inf_array.each { |e| inf_h[e[:name].to_sym] = e[:value] }
+	return inf_h
       end
+    end
+
+    def attr
+      at = self[:attr]
+      return nil if at.to_ptr.null?
+      t = self[:type]
+      case t
+      when :OBJ_CACHE
+        return at[:cache]
+      when :OBJ_GROUP
+        return at[:group]
+      when :OBJ_PCI_DEVICE
+        return at[:pcidev]
+      when :OBJ_BRIDGE
+        return at[:bridge]
+      when :OBJ_OS_DEVICE
+        return at[:osdev]
+      end
+      return nil
     end
 
   end

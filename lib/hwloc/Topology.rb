@@ -1,14 +1,88 @@
 module Hwloc
 
-  class Error < RuntimeError
-  end
-
   def self.const_missing( sym )
     value = enum_value( sym )
 
     return super unless value
 
     value
+  end
+
+  class BoolStruct < FFI::Struct
+
+    def method_missing(m, *args, &block)
+      begin
+        return self[m] == 1
+      rescue
+        super
+      end
+    end
+
+    def each
+      if block_given? then
+        members.each { |m|
+          yield m, (self[m] ==1)
+        }
+      else
+        to_enum(:each)
+      end
+    end
+
+  end
+
+  class Struct < FFI::Struct
+
+    def method_missing(m, *args, &block)
+      begin
+        return self[m]
+      rescue
+        super
+      end
+    end
+
+  end
+
+  class TopologyDiscoverySupport < BoolStruct
+    layout :pu, :uchar
+  end
+
+  class TopologyCpubindSupport < BoolStruct
+    layout :set_thisproc_cpubind,             :uchar,
+           :get_thisproc_cpubind,             :uchar,
+           :set_proc_cpubind,                 :uchar,
+           :get_proc_cpubind,                 :uchar,
+           :set_thisthread_cpubind,           :uchar,
+           :get_thisthread_cpubind,           :uchar,
+           :set_thread_cpubind,               :uchar,
+           :get_thread_cpubind,               :uchar,
+           :get_thisproc_last_cpu_location,   :uchar,
+           :get_proc_last_cpu_location,       :uchar,
+           :get_thisthread_last_cpu_location, :uchar
+  end
+
+  class TopologyMemSupport < BoolStruct
+    layout :set_thisproc_membind,   :uchar,
+           :get_thisproc_membind,   :uchar,
+           :set_proc_membind,       :uchar,
+           :get_proc_membind,       :uchar,
+           :set_thisthread_membind, :uchar,
+           :get_thisthread_membind, :uchar,
+           :set_area_membind,       :uchar,
+           :get_area_membind,       :uchar,
+           :alloc_membind,          :uchar,
+           :firsttouch_membind,     :uchar,
+           :bind_membind,           :uchar,
+           :interleave_membind,     :uchar,
+           :replicate_membind,      :uchar,
+           :nexttouch_membind,      :uchar,
+           :migrate_membind,        :uchar,
+           :get_area_memlocation,   :uchar
+  end
+
+  class TopologySupport < Struct
+    layout :discovery, TopologyDiscoverySupport.ptr,
+           :cpubind,   TopologyCpubindSupport.ptr,
+           :membind,   TopologyMemSupport.ptr
   end
 
   typedef :pointer, :topology
@@ -39,6 +113,8 @@ module Hwloc
   attach_function :hwloc_topology_set_flags, [:topology, :ulong], :int
   attach_function :hwloc_topology_get_flags, [:topology], :ulong
 
+  attach_function :hwloc_topology_get_support, [:topology], TopologySupport.ptr
+
   attach_function :hwloc_topology_get_depth, [:topology], :uint
 
   GetTypeDepth = enum(:get_type_depth, [
@@ -63,6 +139,7 @@ module Hwloc
   end
 
   class Topology
+    include Enumerable
 
     def self.const_missing( sym )
       begin
@@ -144,6 +221,12 @@ module Hwloc
 
     alias flags get_flags
 
+    def get_support
+      Hwloc.hwloc_topology_get_support(@ptr)
+    end
+
+    alias support get_support
+
     def get_depth
       Hwloc.hwloc_topology_get_depth(@ptr)
     end
@@ -191,9 +274,70 @@ module Hwloc
       return Hwloc.hwloc_get_nbobjs_by_depth(@ptr, depth)
     end
 
-    def get_root_obj
-      return Hwloc.hwloc_get_obj_by_depth(@ptr, 0, 0)
+    def get_obj_by_depth(depth, idx)
+      p = Hwloc.hwloc_get_obj_by_depth(@ptr, depth, idx)
+      return nil if p.to_ptr.null?
+      return p
     end
+
+    def get_root_obj
+      return get_obj_by_depth(0, 0)
+    end
+
+    def get_obj_by_type(type, idx)
+      depth = get_type_depth(type)
+      return nil if depth == Hwloc::TYPE_DEPTH_UNKNOWN || depth == Hwloc::TYPE_DEPTH_MULTIPLE
+      return get_obj_by_depth(depth, idx)
+    end
+
+    def get_next_obj_by_depth(depth, prev)
+      return get_obj_by_depth(depth, 0) if prev.nil?
+      return nil if prev.depth != depth
+      return prev.next_cousin
+    end
+
+    def get_next_obj_by_type(type, prev)
+      depth = get_type_depth(type)
+      return nil if depth == Hwloc::TYPE_DEPTH_UNKNOWN || depth == Hwloc::TYPE_DEPTH_MULTIPLE
+      return get_next_obj_by_depth(depth, prev)
+    end
+
+    def each_by_depth(depth)
+      if block_given? then
+        idx = 0
+        while o = get_obj_by_depth(depth, idx) do
+          yield o
+          idx += 1
+        end
+        return self
+      else
+        return Enumerator::new do |yielder|
+          idx = 0
+          while o = get_obj_by_depth(depth, idx) do
+            yielder << o
+            idx += 1
+          end
+        end
+      end
+    end
+
+    def each_by_type(type, &block)
+      depth = get_type_depth(type)
+      return each_by_depth(depth, &block)
+    end
+
+    def each_obj(&block)
+      if block then
+        obj = get_root_obj
+        obj.each_obj(&block)
+        return self
+      else
+        to_enum(:each_obj)
+      end
+    end
+
+    alias traverse each_obj
+    alias each each_obj
 
   end
 
