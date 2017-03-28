@@ -53,6 +53,8 @@ module Hwloc
     include Enumerable
     attr_reader :ptr
 
+    alias to_ptr ptr
+
     def initialize( *args )
       if args.length == 0 then
         @ptr = FFI::AutoPointer::new( Hwloc.hwloc_bitmap_alloc, Hwloc.method(:hwloc_bitmap_free) )
@@ -60,6 +62,8 @@ module Hwloc
         arg = args[0]
         if arg.kind_of?( Bitmap ) then
           @ptr = FFI::AutoPointer::new( Hwloc.hwloc_bitmap_dup(arg.ptr), Hwloc.method(:hwloc_bitmap_free) )
+        elsif arg.kind_of?( FFI::Pointer ) then
+          @ptr = FFI::AutoPointer::new( Hwloc.hwloc_bitmap_dup(arg), Hwloc.method(:hwloc_bitmap_free) )
         elsif arg.kind_of?( String ) then
           s_ptr = FFI::MemoryPointer::from_string(arg)
           @ptr = FFI::AutoPointer::new( Hwloc.hwloc_bitmap_alloc, Hwloc.method(:hwloc_bitmap_free) )
@@ -331,6 +335,12 @@ module Hwloc
       return Hwloc.hwloc_bitmap_compare(@ptr, other.ptr) == 0
     end
 
+  end
+
+  class Cpuset < Bitmap
+  end
+
+  class Nodeset < Bitmap
   end
 
 end

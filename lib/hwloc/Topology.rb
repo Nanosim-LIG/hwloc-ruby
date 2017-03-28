@@ -23,39 +23,6 @@ module Hwloc
   attach_function :hwloc_topology_dup, [:pointer, :topology], :int
   attach_function :hwloc_topology_check, [:topology], :void
 
-  ObjType = enum( :obj_type, [
-    :OBJ_SYSTEM,
-    :OBJ_MACHINE,
-    :OBJ_NUMANODE,
-    :OBJ_PACKAGE,
-    :OBJ_CACHE,
-    :OBJ_CORE,
-    :OBJ_PU,
-    :OBJ_GROUP,
-    :OBJ_MISC,
-    :OBJ_BRIDGE,
-    :OBJ_PCI_DEVICE,
-    :OBJ_OS_DEVICE,
-    :OBJ_TYPE_MAX
-  ] )
-
-  attach_function :hwloc_compare_types, [:obj_type, :obj_type], :int
-
-  ObjCacheType = enum( :obj_cache_type, [
-    :OBJ_CACHE_UNIFIED,
-    :OBJ_CACHE_DATA,
-    :OBJ_CACHE_INSTRUCTION
-  ] )
-
-  ObjCacheType = enum( :obj_osdev_type, [
-    :OBJ_OSDEV_BLOCK,
-    :OBJ_OSDEV_GPU,
-    :OBJ_OSDEV_NETWORK,
-    :OBJ_OSDEV_OPENFABRICS,
-    :OBJ_OSDEV_DMA,
-    :OBJ_OSDEV_COPROC
-  ] )
-
   attach_function :hwloc_topology_ignore_type, [:topology, :obj_type], :int
   attach_function :hwloc_topology_ignore_type_keep_structure, [:topology, :obj_type], :int
   attach_function :hwloc_topology_ignore_all_keep_structure, [:topology], :int
@@ -86,9 +53,7 @@ module Hwloc
   attach_function :hwloc_get_depth_type, [:topology, :uint], :obj_type
   attach_function :hwloc_get_nbobjs_by_depth, [:topology, :uint], :uint
 
-  def self.compare_types(type1, type2)
-    return Hwloc.hwloc_compare_types(type1, type2)
-  end
+  attach_function :hwloc_get_obj_by_depth, [:topology, :uint, :uint], Obj.ptr
 
 end
 
@@ -224,6 +189,10 @@ module Hwloc
       return 0 if depth == Hwloc::TYPE_DEPTH_UNKNOWN
       return -1 if depth == Hwloc::TYPE_DEPTH_MULTIPLE
       return Hwloc.hwloc_get_nbobjs_by_depth(@ptr, depth)
+    end
+
+    def get_root_obj
+      return Hwloc.hwloc_get_obj_by_depth(@ptr, 0, 0)
     end
 
   end
