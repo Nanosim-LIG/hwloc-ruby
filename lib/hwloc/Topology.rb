@@ -270,7 +270,7 @@ module Hwloc
     def get_nbobjs_by_type(type)
       depth = get_type_depth(type)
       return 0 if depth == Hwloc::TYPE_DEPTH_UNKNOWN
-      return -1 if depth == Hwloc::TYPE_DEPTH_MULTIPLE
+      return each_obj.select{ |e| e.type == type }.count if depth == Hwloc::TYPE_DEPTH_MULTIPLE
       return Hwloc.hwloc_get_nbobjs_by_depth(@ptr, depth)
     end
 
@@ -286,7 +286,8 @@ module Hwloc
 
     def get_obj_by_type(type, idx)
       depth = get_type_depth(type)
-      return nil if depth == Hwloc::TYPE_DEPTH_UNKNOWN || depth == Hwloc::TYPE_DEPTH_MULTIPLE
+      return nil if depth == Hwloc::TYPE_DEPTH_UNKNOWN
+      return each_obj.select{ |e| e.type == type }[idx] if depth == Hwloc::TYPE_DEPTH_MULTIPLE
       return get_obj_by_depth(depth, idx)
     end
 
@@ -298,7 +299,11 @@ module Hwloc
 
     def get_next_obj_by_type(type, prev)
       depth = get_type_depth(type)
-      return nil if depth == Hwloc::TYPE_DEPTH_UNKNOWN || depth == Hwloc::TYPE_DEPTH_MULTIPLE
+      return nil if depth == Hwloc::TYPE_DEPTH_UNKNOWN
+      if depth == Hwloc::TYPE_DEPTH_MULTIPLE then
+        list = each_obj.select{ |e| e.type == type }
+        return list[list.find_index { |e| e.to_ptr == e.to_ptr } + 1]
+      end
       return get_next_obj_by_depth(depth, prev)
     end
 
@@ -323,6 +328,7 @@ module Hwloc
 
     def each_by_type(type, &block)
       depth = get_type_depth(type)
+      return each_obj.select{ |e| e.type == type }.each(&block) if depth == Hwloc::TYPE_DEPTH_MULTIPLE
       return each_by_depth(depth, &block)
     end
 
