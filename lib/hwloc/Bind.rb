@@ -25,14 +25,18 @@ module Hwloc
     :MEMBIND_BYNODESET, 1<<5
   ] )
 
+  typedef :pthread_t, :hwloc_thread_t
+  typedef :pid_t, :hwloc_pid_t
+
   attach_function :hwloc_set_cpubind, [:topology, :cpuset, :int], :int
   attach_function :hwloc_get_cpubind, [:topology, :cpuset, :int], :int
-  attach_function :hwloc_set_proc_cpubind, [:topology, :pid_t, :cpuset, :int], :int
-  attach_function :hwloc_get_proc_cpubind, [:topology, :pid_t, :cpuset, :int], :int
-  attach_function :hwloc_set_thread_cpubind, [:topology, :pthread_t, :cpuset, :int], :int
-  attach_function :hwloc_get_thread_cpubind, [:topology, :pthread_t, :cpuset, :int], :int
+  attach_function :hwloc_set_proc_cpubind, [:topology, :hwloc_pid_t, :cpuset, :int], :int
+  attach_function :hwloc_get_proc_cpubind, [:topology, :hwloc_pid_t, :cpuset, :int], :int
+  attach_function :hwloc_set_thread_cpubind, [:topology, :hwloc_thread_t, :cpuset, :int], :int
+  attach_function :hwloc_get_thread_cpubind, [:topology, :hwloc_thread_t, :cpuset, :int], :int
   attach_function :hwloc_get_last_cpu_location, [:topology, :cpuset, :int], :int
-  attach_function :hwloc_get_proc_last_cpu_location, [:topology, :pid_t, :cpuset, :int], :int
+  attach_function :hwloc_get_proc_last_cpu_location, [:topology, :hwloc_pid_t, :cpuset, :int], :int
+
 
   class BindError < Error
   end
@@ -102,19 +106,73 @@ module Hwloc
 
   attach_function :hwloc_set_membind_nodeset, [:topology, :nodeset, :membind_policy, :int], :int
   attach_function :hwloc_set_membind, [:topology, :bitmap, :membind_policy, :int], :int
+  attach_function :hwloc_get_membind_nodeset, [:topology, :nodeset, :pointer, :int], :int
+  attach_function :hwloc_get_membind, [:topology, :bitmap, :pointer, :int], :int
+  attach_function :hwloc_set_proc_membind_nodeset, [:topology, :hwloc_pid_t, :nodeset, :membind_policy, :int], :int
+  attach_function :hwloc_set_proc_membind, [:topology, :hwloc_pid_t, :bitmap, :membind_policy, :int], :int
+  attach_function :hwloc_get_proc_membind_nodeset, [:topology, :hwloc_pid_t, :nodeset, :pointer, :int], :int
+  attach_function :hwloc_get_proc_membind, [:topology, :hwloc_pid_t, :bitmap, :pointer, :int], :int
 
   class Topology
 
-    def set_membind_nodeset( nodeset, policy, flags)
+    def set_membind_nodeset(nodeset, policy, flags)
       err = Hwloc.hwloc_set_membind_nodeset(@ptr, nodeset, policy, flags)
       raise MembindError if err == -1
       return self
     end
 
-    def set_membind_nodeset( set, policy, flags)
+    def set_membind(set, policy, flags)
       err = Hwloc.hwloc_set_membind(@ptr, set, policy, flags)
       raise MembindError if err == -1
       return self
+    end
+
+    def get_membind_nodeset(flags)
+      nodeset = Nodeset::new
+      policy_p = FFI::MemoryPointer::new(MembindPolicy.native_type)
+      err = Hwloc.hwloc_get_membind_nodeset(@ptr, nodeset, policy_p, flags)
+      raise MembindError if err == -1
+      policy = policy_p.read_int
+      return [nodeset, MembindPolicy[policy]]
+    end
+
+    def get_membind(flags)
+      set = Bitmap::new
+      policy_p = FFI::MemoryPointer::new(MembindPolicy.native_type)
+      err = Hwloc.hwloc_get_membind(@ptr, set, policy_p, flags)
+      raise MembindError if err == -1
+      policy = policy_p.read_int
+      return [set, MembindPolicy[policy]]
+    end
+
+    def set_proc_membind_nodeset(pid, nodeset, policy, flags)
+      err = Hwloc.hwloc_set_proc_membind_nodeset(@ptr, pid, nodeset, policy, flags)
+      raise MembindError if err == -1
+      return self
+    end
+
+    def set_proc_membind(pid, set, policy, flags)
+      err = Hwloc.hwloc_set_proc_membind(@ptr, pid, set, policy, flags)
+      raise MembindError if err == -1
+      return self
+    end
+
+    def get_proc_membind_nodeset(pid, flags)
+      nodeset = Nodeset::new
+      policy_p = FFI::MemoryPointer::new(MembindPolicy.native_type)
+      err = Hwloc.hwloc_get_proc_membind_nodeset(@ptr, pid, nodeset, policy_p, flags)
+      raise MembindError if err == -1
+      policy = policy_p.read_int
+      return [nodeset, MembindPolicy[policy]]
+    end
+
+    def get_proc_membind(pid, flags)
+      set = Bitmap::new
+      policy_p = FFI::MemoryPointer::new(MembindPolicy.native_type)
+      err = Hwloc.hwloc_get_proc_membind(@ptr, pid, set, policy_p, flags)
+      raise MembindError if err == -1
+      policy = policy_p.read_int
+      return [set, MembindPolicy[policy]]
     end
 
   end
