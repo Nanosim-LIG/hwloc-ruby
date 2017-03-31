@@ -264,7 +264,6 @@ module Hwloc
 
     def free(pointer)
       Hwloc.hwloc_free(@ptr, pointer, pointer.size)
-      return self
     end
 
     private :free

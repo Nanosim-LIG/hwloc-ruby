@@ -9,7 +9,9 @@ module Hwloc
     :RESTRICT_FLAG_ADAPT_IO, 1<<2
   ] )
 
-  attach_function :hwloc_topology_restrict, [:topology, :cpuset, :restrict_flags], :int
+  attach_function :hwloc_topology_restrict, [:topology, :cpuset, :ulong], :int
+  attach_function :hwloc_custom_insert_topology, [:topology, Obj.ptr, :topology, Obj.ptr,], :int
+  attach_function :hwloc_custom_insert_group_object_by_parent, [:topology, Obj.ptr, :int], Obj.ptr
 
   class EditionError < TopologyError
   end
@@ -32,6 +34,18 @@ module Hwloc
       err = Hwloc.hwloc_topology_restrict(@ptr, cpuset, flags)
       raise EditionError if err == -1
       return self
+    end
+
+    def custom_insert_topology(newparent, oldtopology, oldroot = nil)
+      err = Hwloc.hwloc_custom_insert_topology(@ptr, newparent, oldtopology.ptr, oldroot)
+      raise EditionError if err == -1
+      return self
+    end
+
+    def custom_insert_group_object_by_parent(parent, groupdepth)
+      obj = Hwloc.hwloc_custom_insert_group_object_by_parent(@ptr, parent, groupdepth)
+      raise EditionError if obj.to_ptr.null?
+      return obj
     end
 
   end
