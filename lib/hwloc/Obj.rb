@@ -184,7 +184,7 @@ module Hwloc
     end
 
     def inspect
-      return "<#{self.class}:#{"0x00%x" % (object_id << 1)} type=#{type} logical_index=#{logical_index} ptr=#{to_ptr}>"
+      return "<#{self.class}:#{"0x00%x" % (object_id << 1)} type=#{type}#{name ? " name=#{name.inspect}" : ""} logical_index=#{logical_index} ptr=#{to_ptr}>"
     end
 
     layout_array.each_slice(2) { |f|
