@@ -86,6 +86,8 @@ module Hwloc
   end
 
   typedef :pointer, :topology
+  typedef :pthread_t, :hwloc_thread_t
+  typedef :pid_t, :hwloc_pid_t
 
   attach_function :hwloc_get_api_version, [], :uint
 
@@ -112,6 +114,15 @@ module Hwloc
 
   attach_function :hwloc_topology_set_flags, [:topology, :ulong], :int
   attach_function :hwloc_topology_get_flags, [:topology], :ulong
+
+  attach_function :hwloc_topology_set_pid, [:topology, :hwloc_pid_t], :int
+  attach_function :hwloc_topology_set_fsroot, [:topology, :string], :int
+  attach_function :hwloc_topology_set_synthetic, [:topology, :string], :int
+  attach_function :hwloc_topology_set_xml, [:topology, :string], :int
+  attach_function :hwloc_topology_set_xmlbuffer, [:topology, :pointer, :size_t], :int
+  attach_function :hwloc_topology_set_custom, [:topology], :int
+  attach_function :hwloc_topology_set_distance_matrix, [:topology, :obj_type, :uint, :pointer, :pointer], :int
+  attach_function :hwloc_topology_is_thissystem, [:topology], :int
 
   attach_function :hwloc_topology_get_support, [:topology], TopologySupport.ptr
 
@@ -220,6 +231,55 @@ module Hwloc
     end
 
     alias flags get_flags
+
+    def set_pid(pid)
+      err = Hwloc.hwloc_topology_set_pid(@ptr, pid)
+      raise TopologyError if err == -1
+      return self
+    end
+
+    def set_fsroot(fsroot_path)
+      err = Hwloc.hwloc_topology_set_fsroot(@ptr, fsroot_path)
+      raise TopologyError if err == -1
+      return self
+    end
+
+    def set_synthetic(description)
+      err = Hwloc.hwloc_topology_set_synthetic(@ptr, description)
+      raise TopologyError if err == -1
+      return self
+    end
+
+    def set_xml(xmlpath)
+      err = Hwloc.hwloc_topology_set_xml(@ptr, xmlpath)
+      raise TopologyError if err == -1
+      return self
+    end
+
+    def set_xmlbuffer(pointer)
+      err = Hwloc.hwloc_topology_set_xmlbuffer(@ptr, pointer, pointer.size)
+      raise TopologyError if err == -1
+      return self
+    end
+
+    def set_custom
+      err = Hwloc.hwloc_topology_set_custom(@ptr)
+      raise TopologyError if err == -1
+      return self
+    end
+
+## Will need some work to define properly...
+#    def set_distance_matrix(type, nbobjs, os_index, distances)
+#      err = Hwloc.hwloc_topology_set_distance_matrix(@ptr, type, nbobjs, os_index, distances)
+#      raise TopologyError if err == -1
+#      return self
+#    end
+
+    def is_thissystem
+      return Hwloc.hwloc_topology_is_thissystem(@ptr) == 1
+    end
+
+    alias thissystem? is_thissystem
 
     def get_support
       Hwloc.hwloc_topology_get_support(@ptr)

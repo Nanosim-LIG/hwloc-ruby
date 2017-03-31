@@ -25,9 +25,6 @@ module Hwloc
     :MEMBIND_BYNODESET, 1<<5
   ] )
 
-  typedef :pthread_t, :hwloc_thread_t
-  typedef :pid_t, :hwloc_pid_t
-
   attach_function :hwloc_set_cpubind, [:topology, :cpuset, :int], :int
   attach_function :hwloc_get_cpubind, [:topology, :cpuset, :int], :int
   attach_function :hwloc_set_proc_cpubind, [:topology, :hwloc_pid_t, :cpuset, :int], :int
@@ -36,7 +33,6 @@ module Hwloc
   attach_function :hwloc_get_thread_cpubind, [:topology, :hwloc_thread_t, :cpuset, :int], :int
   attach_function :hwloc_get_last_cpu_location, [:topology, :cpuset, :int], :int
   attach_function :hwloc_get_proc_last_cpu_location, [:topology, :hwloc_pid_t, :cpuset, :int], :int
-
 
   class BindError < Error
   end
