@@ -239,6 +239,10 @@ module Hwloc
 
     layout *layout_array
 
+    def ==(other)
+      return other.kind_of?(Obj) && to_ptr == other.to_ptr
+    end
+
     def inspect
       return "<#{self.class}:#{"0x00%x" % (object_id << 1)} type=#{type}#{name ? " name=#{name.inspect}" : ""} logical_index=#{logical_index} ptr=#{to_ptr}>"
     end
