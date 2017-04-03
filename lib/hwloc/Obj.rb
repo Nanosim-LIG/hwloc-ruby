@@ -270,6 +270,9 @@ module Hwloc
       end
     }
 
+    alias previous_sibling prev_sibling
+    alias previous_cousin prev_cousin
+
     def children
       arity = self[:arity]
       if arity == 0 then
