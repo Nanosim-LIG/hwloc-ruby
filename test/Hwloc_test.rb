@@ -3,6 +3,8 @@ require 'minitest/autorun'
 require 'hwloc'
 require 'ffi'
 
+require_relative 'Bitmap/Bitmap'
+
 class BaseTest < Minitest::Test
 
   def setup
