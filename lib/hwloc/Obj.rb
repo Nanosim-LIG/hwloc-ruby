@@ -286,6 +286,26 @@ module Hwloc
       end
     end
 
+    def each_child(*args, &block)
+      return children.each(*args, &block)
+    end
+
+    def each_parent(&block)
+      if block then
+        if parent then
+          block.call parent
+          parent.each_parent(&block)
+        end
+        return self
+      else
+        to_enum(:each_parent)
+      end
+    end
+
+    def parents
+      return each_parent.to_a
+    end
+
     def each_obj(&block)
       if block then
         block.call self
@@ -325,6 +345,10 @@ module Hwloc
 	inf_array.each { |e| inf_h[e[:name].to_sym] = e[:value] }
 	return inf_h
       end
+    end
+
+    def each_info(*args, &block)
+      return infos.each(*args, &block)
     end
 
     def attr
