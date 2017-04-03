@@ -45,7 +45,71 @@ module Hwloc
     :OBJ_OSDEV_COPROC
   ] )
 
-  class Distances < FFI::Struct
+  class Struct < FFI::Struct
+
+    def method_missing(m, *args, &block)
+      begin
+        return self[m]
+      rescue
+        super
+      end
+    end
+
+    def [](symbol)
+      o = super
+      o.instance_variable_set(:@topology, @topology) if o.kind_of?(Hwloc::Struct) || o.kind_of?(Hwloc::Union)
+      return o
+    end
+
+    attr_reader :topology
+
+  end
+
+  class Union < FFI::Union
+
+    def method_missing(m, *args, &block)
+      begin
+        return self[m]
+      rescue
+        super
+      end
+    end
+
+    def [](symbol)
+      o = super
+      o.instance_variable_set(:@topology, @topology) if o.kind_of?(Hwloc::Struct) || o.kind_of?(Hwloc::Union)
+      return o
+    end
+
+    attr_reader :topology
+
+  end
+
+  class BoolStruct < FFI::Struct
+
+    def method_missing(m, *args, &block)
+      begin
+        return self[m] == 1
+      rescue
+        super
+      end
+    end
+
+    def each
+      if block_given? then
+        members.each { |m|
+          yield m, (self[m] ==1)
+        }
+      else
+        to_enum(:each)
+      end
+    end
+
+    attr_reader :topology
+
+  end
+
+  class Distances < Struct
     layout :relative_depth, :uint,
            :nbobjs,         :uint,
            :latency,        :pointer,
@@ -53,7 +117,7 @@ module Hwloc
            :latency_base,   :float
   end
 
-  class ObjInfo < FFI::Struct
+  class ObjInfo < Struct
     layout :name, :string,
            :value, :string
 
@@ -63,19 +127,19 @@ module Hwloc
 
   end
 
-  class ObjMemoryPageType < FFI::Struct
+  class ObjMemoryPageType < Struct
     layout :size,  :uint64,
            :count, :uint64
   end
 
-  class ObjMemory < FFI::Struct
+  class ObjMemory < Struct
     layout :total_memory, :uint64,
            :local_memory, :uint64,
            :page_types_len, :uint,
            :page_types, :pointer
   end
 
-  class CacheAttr < FFI::Struct
+  class CacheAttr < Struct
     layout :size,          :uint64,
            :depth,         :uint,
            :linesize,      :uint,
@@ -83,11 +147,11 @@ module Hwloc
            :type,          :obj_cache_type
   end
 
-  class GroupAttr < FFI::Struct
+  class GroupAttr < Struct
     layout :depth, :uint
   end
 
-  class PcidevAttr < FFI::Struct
+  class PcidevAttr < Struct
     layout :domain,       :ushort,
            :bus,          :uchar,
            :dev,          :uchar,
@@ -101,21 +165,21 @@ module Hwloc
            :linkspeed,    :float
   end
 
-  class AnonBridgeAttrUpstream < FFI::Union
+  class AnonBridgeAttrUpstream < Union
     layout :pci, PcidevAttr
   end
 
-  class AnonBridgeAttrDownstreamStruct < FFI::Struct
+  class AnonBridgeAttrDownstreamStruct < Struct
     layout :domain,          :ushort,
            :secondary_bus,   :uchar,
            :subordinate_bus, :uchar
   end
 
-  class AnonBridgeAttrDownstream < FFI::Union
+  class AnonBridgeAttrDownstream < Union
     layout :pci, AnonBridgeAttrDownstreamStruct
   end
 
-  class BridgeAttr < FFI::Struct
+  class BridgeAttr < Struct
     layout :upstream,        AnonBridgeAttrUpstream,
            :upstream_type,   :obj_bridge_type,
            :downstream,      AnonBridgeAttrDownstream,
@@ -123,11 +187,11 @@ module Hwloc
            :depth,           :uint
   end
 
-  class OsdevAttr < FFI::Struct
+  class OsdevAttr < Struct
     layout :type, :obj_osdev_type
   end
 
-  class ObjAttr < FFI::Union
+  class ObjAttr < Union
     layout :cache,  CacheAttr,
            :group,  GroupAttr,
            :pcidev, PcidevAttr,
@@ -135,7 +199,7 @@ module Hwloc
            :osdev,  OsdevAttr
   end
 
-  class Obj < FFI::Struct
+  class Obj < Struct
   end
 
   class Obj
@@ -175,14 +239,6 @@ module Hwloc
 
     layout *layout_array
 
-    def method_missing(m, *args, &block)
-      begin
-        return self[m]
-      rescue
-        super
-      end
-    end
-
     def inspect
       return "<#{self.class}:#{"0x00%x" % (object_id << 1)} type=#{type}#{name ? " name=#{name.inspect}" : ""} logical_index=#{logical_index} ptr=#{to_ptr}>"
     end
@@ -215,7 +271,11 @@ module Hwloc
       if arity == 0 then
         return []
       else
-        return self[:children].read_array_of_pointer(arity).collect { |p| Obj::new(p) }
+        return self[:children].read_array_of_pointer(arity).collect { |p|
+          c = Obj::new(p)
+          c.instance_variable_set(:@topology, @topology)
+          c
+        }
       end
     end
 
@@ -238,7 +298,11 @@ module Hwloc
       if distances_count == 0 then
         return []
       else
-        return self[:distances].read_array_of_pointer(distances_count).collect { |p| Distances::new(p) }
+        return self[:distances].read_array_of_pointer(distances_count).collect { |p|
+          d = Distances::new(p)
+          d.instance_variable_set(:@topology, @topology)
+          d
+        }
       end
     end
 
@@ -247,7 +311,9 @@ module Hwloc
       if infos_count == 0 then
         return []
       else
-        inf_array = infos_count.times.collect { |i| ObjInfo::new(self[:infos] + i*ObjInfo.size) }
+        inf_array = infos_count.times.collect { |i|
+          o = ObjInfo::new(self[:infos] + i*ObjInfo.size)
+        }
 	inf_h = {}
 	inf_array.each { |e| inf_h[e[:name].to_sym] = e[:value] }
 	return inf_h

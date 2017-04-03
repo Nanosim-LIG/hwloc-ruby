@@ -21,12 +21,14 @@ module Hwloc
     def insert_misc_object_by_cpuset(cpuset, name)
       obj = Hwloc.hwloc_topology_insert_misc_object_by_cpuset(@ptr, cpuset, name)
       raise EditionError if obj.to_ptr.null?
+      obj.instance_variable_set(:@topology, self)
       return obj
     end
 
     def insert_misc_object_by_parent(parent, name)
       obj = Hwloc.hwloc_topology_insert_misc_object_by_parent(@ptr, parent, name)
       raise EditionError if obj.to_ptr.null?
+      obj.instance_variable_set(:@topology, self)
       return obj
     end
 
@@ -45,6 +47,7 @@ module Hwloc
     def custom_insert_group_object_by_parent(parent, groupdepth)
       obj = Hwloc.hwloc_custom_insert_group_object_by_parent(@ptr, parent, groupdepth)
       raise EditionError if obj.to_ptr.null?
+      obj.instance_variable_set(:@topology, self)
       return obj
     end
 

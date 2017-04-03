@@ -8,40 +8,6 @@ module Hwloc
     value
   end
 
-  class BoolStruct < FFI::Struct
-
-    def method_missing(m, *args, &block)
-      begin
-        return self[m] == 1
-      rescue
-        super
-      end
-    end
-
-    def each
-      if block_given? then
-        members.each { |m|
-          yield m, (self[m] ==1)
-        }
-      else
-        to_enum(:each)
-      end
-    end
-
-  end
-
-  class Struct < FFI::Struct
-
-    def method_missing(m, *args, &block)
-      begin
-        return self[m]
-      rescue
-        super
-      end
-    end
-
-  end
-
   class TopologyDiscoverySupport < BoolStruct
     layout :pu, :uchar
   end
@@ -282,7 +248,9 @@ module Hwloc
     alias thissystem? is_thissystem
 
     def get_support
-      Hwloc.hwloc_topology_get_support(@ptr)
+      p = Hwloc.hwloc_topology_get_support(@ptr)
+      p.instance_variable_set(:@topology, self)
+      return p
     end
 
     alias support get_support
@@ -337,6 +305,7 @@ module Hwloc
     def get_obj_by_depth(depth, idx)
       p = Hwloc.hwloc_get_obj_by_depth(@ptr, depth, idx)
       return nil if p.to_ptr.null?
+      p.instance_variable_set(:@topology, self)
       return p
     end
 
