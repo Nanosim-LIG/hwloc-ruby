@@ -13,4 +13,5 @@ class BaseTest < Minitest::Test
 
 end
 
+require_relative 'Topology/Topology'
 require_relative 'Topology/Obj'
