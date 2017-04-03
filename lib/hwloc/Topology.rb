@@ -145,10 +145,10 @@ module Hwloc
           raise TopologyError if err == -1
           @ptr = FFI::AutoPointer::new( ptr.read_pointer, Hwloc.method(:hwloc_topology_destroy) )
         else
-          raise ArgumentError, "Invalid argument!"
+          raise TopologyError, "Invalid argument"
         end
       else
-        raise ArgumentError, "Invalid number of arguments given!"
+        raise TopologyError, "Invalid argument"
       end
     end
 
@@ -266,7 +266,9 @@ module Hwloc
     end
 
     def get_depth_type(depth)
-      Hwloc.hwloc_get_depth_type(@ptr, depth)
+      type = Hwloc.hwloc_get_depth_type(@ptr, depth)
+      raise TopologyError, "Invalid argument" if type == -1
+      return type
     end
 
     def get_type_or_below_depth(type)
