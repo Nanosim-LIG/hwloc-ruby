@@ -19,7 +19,7 @@ class BitmapTest < Minitest::Test
   def test_first
     b = Hwloc::Bitmap::new("0x14")
     assert_equal(2, b.first)
-    assert_equal(nil, b.zero!.last)
+    assert_nil(b.zero!.last)
   end
 
   def test_last
@@ -46,8 +46,10 @@ class BitmapTest < Minitest::Test
   def test_each
     b = Hwloc::Bitmap::new("0x14")
     assert_equal([2,4], b.each.to_a)
-    b = Hwloc::Bitmap::new([1,2,5,7,11,15..Float::INFINITY])
-    assert_equal([1,2,5,7,11,15,16], b.each.lazy.take(7).force)
+    if RUBY_VERSION.scan(/\d+/).collect(&:to_i).first >= 2
+      b = Hwloc::Bitmap::new([1,2,5,7,11,15..Float::INFINITY])
+      assert_equal([1,2,5,7,11,15,16], b.each.lazy.take(7).force)
+    end
   end
 
   def test_zero

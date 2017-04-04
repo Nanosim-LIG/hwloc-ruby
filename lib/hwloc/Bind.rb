@@ -113,7 +113,12 @@ module Hwloc
   attach_function :hwloc_set_area_membind, [:topology, :pointer, :size_t, :bitmap, :membind_policy, :int], :int
   attach_function :hwloc_get_area_membind_nodeset, [:topology, :pointer, :size_t, :nodeset, :pointer, :int], :int
   attach_function :hwloc_get_area_membind, [:topology, :pointer, :size_t, :bitmap, :pointer, :int], :int
-  attach_function :hwloc_get_area_memlocation, [:topology, :pointer, :size_t, :bitmap, :int], :int
+
+  begin
+    attach_function :hwloc_get_area_memlocation, [:topology, :pointer, :size_t, :bitmap, :int], :int
+  rescue FFI::NotFoundError
+    warn "Missing hwloc_get_area_memlocation support!"
+  end
 
   attach_function :hwloc_alloc, [:topology, :size_t], :pointer
   attach_function :hwloc_alloc_membind_nodeset, [:topology, :size_t, :nodeset, :membind_policy, :int], :pointer
@@ -212,11 +217,13 @@ module Hwloc
       return [set, policy]
     end
 
-    def get_area_memlocation(pointer, flags=0)
-      set = Bitmap::new
-      err = Hwloc.hwloc_get_area_memlocation(@ptr, pointer, pointer.size, set, flags)
-      raise MembindError if err == -1
-      return set
+    if Hwloc.respond_to?(:hwloc_get_area_memlocation)
+      def get_area_memlocation(pointer, flags=0)
+        set = Bitmap::new
+        err = Hwloc.hwloc_get_area_memlocation(@ptr, pointer, pointer.size, set, flags)
+        raise MembindError if err == -1
+        return set
+      end
     end
 
     def alloc(size)
