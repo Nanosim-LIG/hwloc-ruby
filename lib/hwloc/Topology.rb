@@ -55,10 +55,6 @@ module Hwloc
   typedef :pthread_t, :hwloc_thread_t
   typedef :pid_t, :hwloc_pid_t
 
-  attach_function :hwloc_get_api_version, [], :uint
-
-  raise Error, "Wrong api version!" if Hwloc.hwloc_get_api_version != 0x00010b00
-
   attach_function :hwloc_topology_init, [:pointer], :int
   attach_function :hwloc_topology_load, [:topology], :int
   attach_function :hwloc_topology_destroy, [:topology], :void
