@@ -332,12 +332,14 @@ module Hwloc
     end
 
     def compare_first(other)
-      return Hwloc.hwloc_bitmap_compare_first(@ptr, other.ptr) == 0
+      return Hwloc.hwloc_bitmap_compare_first(@ptr, other.ptr)
     end
 
     def compare(other)
-      return Hwloc.hwloc_bitmap_compare(@ptr, other.ptr) == 0
+      return Hwloc.hwloc_bitmap_compare(@ptr, other.ptr)
     end
+
+    alias <=> compare
 
   end
 
