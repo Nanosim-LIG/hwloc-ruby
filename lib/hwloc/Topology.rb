@@ -311,6 +311,8 @@ module Hwloc
       return get_obj_by_depth(0, 0)
     end
 
+    alias root_obj get_root_obj
+
     def get_obj_by_type(type, idx)
       depth = get_type_depth(type)
       return nil if depth == Hwloc::TYPE_DEPTH_UNKNOWN

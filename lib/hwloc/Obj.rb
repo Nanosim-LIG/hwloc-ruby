@@ -247,6 +247,10 @@ module Hwloc
       return "<#{self.class}:#{"0x00%x" % (object_id << 1)} type=#{type}#{name ? " name=#{name.inspect}" : ""} logical_index=#{logical_index} ptr=#{to_ptr}>"
     end
 
+    def to_s
+      return "#{type}_#{logical_index}(#{depth})"
+    end
+
     layout_array.each_slice(2) { |f|
       case f[1]
       when :cpuset
