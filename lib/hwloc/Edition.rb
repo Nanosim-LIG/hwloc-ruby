@@ -53,4 +53,16 @@ module Hwloc
 
   end
 
+  class Obj
+
+    def to_topo
+      new_topo = Topology::new
+      new_topo.set_custom
+      new_topo.custom_insert_topology( new_topo.root_obj , @topology, self)
+      new_topo.load
+      return new_topo
+    end
+
+  end
+
 end
