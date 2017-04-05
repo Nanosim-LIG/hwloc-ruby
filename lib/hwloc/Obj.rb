@@ -202,6 +202,9 @@ module Hwloc
   class Obj < Struct
   end
 
+  attach_function :hwloc_obj_type_snprintf, [:pointer, :size_t, Obj.ptr, :int], :int
+  attach_function :hwloc_obj_attr_snprintf, [:pointer, :size_t, Obj.ptr, :string, :int], :int
+
   class Obj
     layout_array = [
       :type,             :obj_type,
@@ -243,12 +246,31 @@ module Hwloc
       return other.kind_of?(Obj) && to_ptr == other.to_ptr
     end
 
-    def inspect
-      return "<#{self.class}:#{"0x00%x" % (object_id << 1)} type=#{type}#{name ? " name=#{name.inspect}" : ""} logical_index=#{logical_index} ptr=#{to_ptr}>"
+    def type_snprintf(verbose=0)
+      sz = Hwloc.hwloc_obj_type_snprintf(nil, 0, self, verbose) + 1
+      str_ptr = FFI::MemoryPointer::new(:char, sz)
+      Hwloc.hwloc_obj_type_snprintf(str_ptr, sz, self, verbose)
+      return str_ptr.read_string
     end
 
-    def to_s
-      return "#{type}_#{logical_index}(#{depth})"
+    alias type_name type_snprintf
+
+    def attr_snprintf(verbose=0, separator=",")
+      sz = Hwloc.hwloc_obj_attr_snprintf(nil, 0, self, separator, verbose) + 1
+      str_ptr = FFI::MemoryPointer::new(:char, sz)
+      Hwloc.hwloc_obj_attr_snprintf(str_ptr, sz, self, separator, verbose)
+      return str_ptr.read_string
+    end
+
+    def to_s(verbose=0)
+      attr_str = attr_snprintf(verbose)
+      str = "#{type_snprintf(verbose)} L##{logical_index}"
+      str += " (#{attr_str})" if attr_str != ""
+      return str
+    end
+
+    def inspect
+      return to_s(1)
     end
 
     layout_array.each_slice(2) { |f|
