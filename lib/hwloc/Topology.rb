@@ -361,6 +361,18 @@ module Hwloc
       return each_by_depth(depth, &block)
     end
 
+    ObjType.symbols[0..-1].each { |sym|
+      methname = "each_"
+      suffix = sym.to_s[4..-1].downcase
+      methname += suffix
+      define_method(methname) { |&block|
+        each_by_type(sym, &block)
+      }
+      define_method(suffix+"s") {
+        send(methname).to_a
+      }
+    }
+
     def each_obj(&block)
       if block then
         obj = get_root_obj
