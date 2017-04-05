@@ -130,6 +130,9 @@ module Hwloc
   class ObjMemoryPageType < Struct
     layout :size,  :uint64,
            :count, :uint64
+    def size
+      return self[:size]
+    end
   end
 
   class ObjMemory < Struct
@@ -145,6 +148,9 @@ module Hwloc
            :linesize,      :uint,
            :associativity, :int,
            :type,          :obj_cache_type
+    def size
+      return self[:size]
+    end
   end
 
   class GroupAttr < Struct
