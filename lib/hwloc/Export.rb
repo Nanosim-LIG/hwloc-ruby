@@ -46,6 +46,21 @@ module Hwloc
 
     private :free_xmlbuffer
 
+    def export_synthetic(flags = 0)
+      str_ptr = FFI::MemoryPointer::new(:char, 2048)
+      err = Hwloc.hwloc_topology_export_synthetic(@ptr, str_ptr, str_ptr.size, flags)
+      raise ExportError, "Topology not symetric" if err == -1
+      return str_ptr.read_string
+    end
+
+    def to_s
+      begin
+        return export_synthetic
+      rescue ExportError
+        return super
+      end
+    end
+
   end
 
 end
