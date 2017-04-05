@@ -127,6 +127,10 @@ module Hwloc
 
     attr_reader :ptr
 
+    def inspect
+      return "#<#{self.class}:#{"0x00%x" % (object_id << 1)}>"
+    end
+
     def initialize( *args )
       if args.length == 0 then
         ptr = FFI::MemoryPointer::new( :pointer )
