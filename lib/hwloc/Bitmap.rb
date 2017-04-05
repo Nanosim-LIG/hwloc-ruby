@@ -56,7 +56,7 @@ module Hwloc
     alias to_ptr ptr
 
     def inspect
-      return "<#{self.class}:#{"0x00%x" % (object_id << 1)} map=[#{to_a.join(",")}] ptr=#{to_ptr}>"
+      return "#<#{self.class}: {#{to_a.join(",")}}>"
     end
 
     def initialize( *args )
