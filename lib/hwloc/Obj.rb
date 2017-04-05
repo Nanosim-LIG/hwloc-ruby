@@ -332,6 +332,9 @@ module Hwloc
       return each_parent.to_a
     end
 
+    alias ancestors parents
+    alias each_ancestor each_parent
+
     def each_obj(&block)
       if block then
         block.call self
@@ -345,6 +348,20 @@ module Hwloc
     end
 
     alias traverse each_obj
+
+    def each_descendant
+      if block then
+        children.each { |c|
+          c.each_obj(&block)
+        }
+      else
+        to_enum(:each_descendant)
+      end
+    end
+
+    def descendants
+      return each_descendant.to_a
+    end
 
     def distances
       distances_count = self[:distances_count]
