@@ -140,6 +140,14 @@ module Hwloc
            :local_memory, :uint64,
            :page_types_len, :uint,
            :page_types, :pointer
+    def page_types
+      page_types_ptr = self[:page_types]
+      return page_types_len.times.collect { |i|
+        pt = ObjMemoryPageType::new(page_types_ptr+i*ObjMemoryPageType.size)
+        pt.instance_variable_set(:@topology, @topology)
+        pt
+      }
+    end
   end
 
   class CacheAttr < Struct
