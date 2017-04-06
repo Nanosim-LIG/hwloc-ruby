@@ -31,4 +31,12 @@ caches = first_core.ancestors.take_while{ |o| o.type == :OBJ_CACHE }
 caches.each_with_index { |c,i|
   puts "#{c.type_name}: #{c.attr.size/1024}KiB"
 }
+
+#migrate the execution to different OBJ_PU
+t.pus.each { |pu|
+  t.set_cpubind(pu.cpuset)
+  puts "Processing on #{pu} #P#{pu.os_index}"
+  i = 0
+  (1<<26).times { i+=1 }
+}
 ```
