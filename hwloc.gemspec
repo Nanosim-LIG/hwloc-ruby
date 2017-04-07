@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'hwloc'
-  s.version = "0.1"
+  s.version = "0.2.0"
   s.author = "Brice Videau"
   s.email = "brice.videau@imag.fr"
   s.homepage = "https://github.com/Nanosim-LIG/hwloc-ruby"

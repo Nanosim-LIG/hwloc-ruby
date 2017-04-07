@@ -6,7 +6,11 @@ module Hwloc
 
   attach_function :hwloc_get_api_version, [], :uint
 
-  raise RuntimeError, "Wrong hwloc api version (#{Hwloc.hwloc_get_api_version.to_a(16)})!" if Hwloc.hwloc_get_api_version < 0x00010a00
+  API_VERSION = Hwloc.hwloc_get_api_version
+  API_VERSION_1_10 = 0x00010a00
+  API_VERSION_2_0 = 0x00020000
+
+  raise RuntimeError, "Wrong hwloc api version (#{API_VERSION.to_s(16)})!" if API_VERSION < 0x00010a00
 
   attach_function :strerror, [:int], :string
 

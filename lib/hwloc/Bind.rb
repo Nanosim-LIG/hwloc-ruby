@@ -6,15 +6,26 @@ module Hwloc
     :CPUBIND_NOMEMBIND, 1<<3
   ] )
 
-  MembindPolicy = enum( :membind_policy, [
-    :MEMBIND_DEFAULT,    0,
-    :MEMBIND_FIRSTTOUCH, 1,
-    :MEMBIND_BIND,       2,
-    :MEMBIND_INTERLEAVE, 3,
-    :MEMBIND_REPLICATE,  4,
-    :MEMBIND_NEXTTOUCH,  5,
-    :MEMBIND_MIXED,      -1
-  ] )
+  if API_VERSION < API_VERSION_2_0 then
+    MembindPolicy = enum( :membind_policy, [
+      :MEMBIND_DEFAULT,    0,
+      :MEMBIND_FIRSTTOUCH, 1,
+      :MEMBIND_BIND,       2,
+      :MEMBIND_INTERLEAVE, 3,
+      :MEMBIND_REPLICATE,  4,
+      :MEMBIND_NEXTTOUCH,  5,
+      :MEMBIND_MIXED,      -1
+    ] )
+  else
+    MembindPolicy = enum( :membind_policy, [
+      :MEMBIND_DEFAULT,    0,
+      :MEMBIND_FIRSTTOUCH, 1,
+      :MEMBIND_BIND,       2,
+      :MEMBIND_INTERLEAVE, 3,
+      :MEMBIND_NEXTTOUCH,  4,
+      :MEMBIND_MIXED,      -1
+    ] )
+  end
 
   MembindFlags = enum( :membind_flags, [
     :MEMBIND_PROCESS,   1<<0,
@@ -100,18 +111,21 @@ module Hwloc
   class MembindError < BindError
   end
 
-  attach_function :hwloc_set_membind_nodeset, [:topology, :nodeset, :membind_policy, :int], :int
+  if API_VERSION < API_VERSION_2_0 then
+    attach_function :hwloc_set_membind_nodeset, [:topology, :nodeset, :membind_policy, :int], :int
+    attach_function :hwloc_get_membind_nodeset, [:topology, :nodeset, :pointer, :int], :int
+    attach_function :hwloc_set_proc_membind_nodeset, [:topology, :hwloc_pid_t, :nodeset, :membind_policy, :int], :int
+    attach_function :hwloc_get_proc_membind_nodeset, [:topology, :hwloc_pid_t, :nodeset, :pointer, :int], :int
+    attach_function :hwloc_set_area_membind_nodeset, [:topology, :pointer, :size_t, :nodeset, :membind_policy, :int], :int
+    attach_function :hwloc_get_area_membind_nodeset, [:topology, :pointer, :size_t, :nodeset, :pointer, :int], :int
+    attach_function :hwloc_alloc_membind_nodeset, [:topology, :size_t, :nodeset, :membind_policy, :int], :pointer
+  end
   attach_function :hwloc_set_membind, [:topology, :bitmap, :membind_policy, :int], :int
-  attach_function :hwloc_get_membind_nodeset, [:topology, :nodeset, :pointer, :int], :int
   attach_function :hwloc_get_membind, [:topology, :bitmap, :pointer, :int], :int
-  attach_function :hwloc_set_proc_membind_nodeset, [:topology, :hwloc_pid_t, :nodeset, :membind_policy, :int], :int
   attach_function :hwloc_set_proc_membind, [:topology, :hwloc_pid_t, :bitmap, :membind_policy, :int], :int
-  attach_function :hwloc_get_proc_membind_nodeset, [:topology, :hwloc_pid_t, :nodeset, :pointer, :int], :int
   attach_function :hwloc_get_proc_membind, [:topology, :hwloc_pid_t, :bitmap, :pointer, :int], :int
 
-  attach_function :hwloc_set_area_membind_nodeset, [:topology, :pointer, :size_t, :nodeset, :membind_policy, :int], :int
   attach_function :hwloc_set_area_membind, [:topology, :pointer, :size_t, :bitmap, :membind_policy, :int], :int
-  attach_function :hwloc_get_area_membind_nodeset, [:topology, :pointer, :size_t, :nodeset, :pointer, :int], :int
   attach_function :hwloc_get_area_membind, [:topology, :pointer, :size_t, :bitmap, :pointer, :int], :int
 
   begin
@@ -121,31 +135,81 @@ module Hwloc
   end
 
   attach_function :hwloc_alloc, [:topology, :size_t], :pointer
-  attach_function :hwloc_alloc_membind_nodeset, [:topology, :size_t, :nodeset, :membind_policy, :int], :pointer
   attach_function :hwloc_alloc_membind, [:topology, :size_t, :bitmap, :membind_policy, :int], :pointer
   attach_function :hwloc_free, [:topology, :pointer, :size_t], :int
 
   class Topology
 
-    def set_membind_nodeset(nodeset, policy, flags=0)
-      err = Hwloc.hwloc_set_membind_nodeset(@ptr, nodeset, policy, flags)
-      raise MembindError if err == -1
-      return self
+    if API_VERSION < API_VERSION_2_0 then
+      def set_membind_nodeset(nodeset, policy, flags=0)
+        err = Hwloc.hwloc_set_membind_nodeset(@ptr, nodeset, policy, flags)
+        raise MembindError if err == -1
+        return self
+      end
+
+      def get_membind_nodeset(flags=0)
+        nodeset = Nodeset::new
+        policy_p = FFI::MemoryPointer::new(MembindPolicy.native_type)
+        err = Hwloc.hwloc_get_membind_nodeset(@ptr, nodeset, policy_p, flags)
+        raise MembindError if err == -1
+        policy = policy_p.read_int
+        return [nodeset, MembindPolicy[policy]]
+      end
+
+      def set_proc_membind_nodeset(pid, nodeset, policy, flags=0)
+        err = Hwloc.hwloc_set_proc_membind_nodeset(@ptr, pid, nodeset, policy, flags)
+        raise MembindError if err == -1
+        return self
+      end
+
+      def get_proc_membind_nodeset(pid, flags=0)
+        nodeset = Nodeset::new
+        policy_p = FFI::MemoryPointer::new(MembindPolicy.native_type)
+        err = Hwloc.hwloc_get_proc_membind_nodeset(@ptr, pid, nodeset, policy_p, flags)
+        raise MembindError if err == -1
+        policy = MembindPolicy[policy_p.read_int]
+        return [nodeset, policy]
+      end
+
+      def set_area_membind_nodeset(pointer, nodeset, policy, flags=0)
+        err = Hwloc.hwloc_set_area_membind_nodeset(@ptr, pointer, pointer.size, nodeset, policy, flags)
+        raise MembindError if err == -1
+        return self
+      end
+
+      def get_area_membind_nodeset(pointer, flags=0)
+        nodeset = Nodeset::new
+        policy_p = FFI::MemoryPointer::new(MembindPolicy.native_type)
+        err = Hwloc.hwloc_get_area_membind_nodeset(@ptr, pointer, pointer.size, nodeset, policy_p, flags)
+        raise MembindError if err == -1
+        policy = MembindPolicy[policy_p.read_int]
+        return [nodeset, policy]
+      end
+
+      def alloc_membind_nodeset(size, nodeset, policy, flags=0)
+        ptr = Hwloc.hwloc_alloc_membind_nodeset(@ptr, size, nodeset, policy, flags)
+        raise MembindError if ptr.null?
+        ptr = ptr.slice(0, size)
+        return FFI::AutoPointer::new(ptr, self.method(:free))
+      end
+
+      def alloc_membind_policy_nodeset(size, nodeset, policy, flags=0)
+        begin
+          return alloc_membind_nodeset(size, nodeset, policy, flags)
+        rescue MembindError
+          set_membind_nodeset(nodeset, policy, flags)
+          ptr = alloc(size)
+          ptr.clear if policy != Hwloc::MEMBIND_FIRSTTOUCH
+          return ptr
+        end
+      end
+
     end
 
     def set_membind(set, policy, flags=0)
       err = Hwloc.hwloc_set_membind(@ptr, set, policy, flags)
       raise MembindError if err == -1
       return self
-    end
-
-    def get_membind_nodeset(flags=0)
-      nodeset = Nodeset::new
-      policy_p = FFI::MemoryPointer::new(MembindPolicy.native_type)
-      err = Hwloc.hwloc_get_membind_nodeset(@ptr, nodeset, policy_p, flags)
-      raise MembindError if err == -1
-      policy = policy_p.read_int
-      return [nodeset, MembindPolicy[policy]]
     end
 
     def get_membind(flags=0)
@@ -157,25 +221,10 @@ module Hwloc
       return [set, MembindPolicy[policy]]
     end
 
-    def set_proc_membind_nodeset(pid, nodeset, policy, flags=0)
-      err = Hwloc.hwloc_set_proc_membind_nodeset(@ptr, pid, nodeset, policy, flags)
-      raise MembindError if err == -1
-      return self
-    end
-
     def set_proc_membind(pid, set, policy, flags=0)
       err = Hwloc.hwloc_set_proc_membind(@ptr, pid, set, policy, flags)
       raise MembindError if err == -1
       return self
-    end
-
-    def get_proc_membind_nodeset(pid, flags=0)
-      nodeset = Nodeset::new
-      policy_p = FFI::MemoryPointer::new(MembindPolicy.native_type)
-      err = Hwloc.hwloc_get_proc_membind_nodeset(@ptr, pid, nodeset, policy_p, flags)
-      raise MembindError if err == -1
-      policy = MembindPolicy[policy_p.read_int]
-      return [nodeset, policy]
     end
 
     def get_proc_membind(pid, flags=0)
@@ -187,25 +236,10 @@ module Hwloc
       return [set, policy]
     end
 
-    def set_area_membind_nodeset(pointer, nodeset, policy, flags=0)
-      err = Hwloc.hwloc_set_area_membind_nodeset(@ptr, pointer, pointer.size, nodeset, policy, flags)
-      raise MembindError if err == -1
-      return self
-    end
-
     def set_area_membind(pointer, set, policy, flags=0)
       err = Hwloc.hwloc_set_area_membind(@ptr, pointer, pointer.size, set, policy, flags)
       raise MembindError if err == -1
       return self
-    end
-
-    def get_area_membind_nodeset(pointer, flags=0)
-      nodeset = Nodeset::new
-      policy_p = FFI::MemoryPointer::new(MembindPolicy.native_type)
-      err = Hwloc.hwloc_get_area_membind_nodeset(@ptr, pointer, pointer.size, nodeset, policy_p, flags)
-      raise MembindError if err == -1
-      policy = MembindPolicy[policy_p.read_int]
-      return [nodeset, policy]
     end
 
     def get_area_membind(pointer, flags=0)
@@ -233,29 +267,11 @@ module Hwloc
       return FFI::AutoPointer::new(ptr, self.method(:free))
     end
 
-    def alloc_membind_nodeset(size, nodeset, policy, flags=0)
-      ptr = Hwloc.hwloc_alloc_membind_nodeset(@ptr, size, nodeset, policy, flags)
-      raise MembindError if ptr.null?
-      ptr = ptr.slice(0, size)
-      return FFI::AutoPointer::new(ptr, self.method(:free))
-    end
-
     def alloc_membind(size, set, policy, flags=0)
       ptr = Hwloc.hwloc_alloc_membind(@ptr, size, set, policy, flags)
       raise MembindError if ptr.null?
       ptr = ptr.slice(0, size)
       return FFI::AutoPointer::new(ptr, self.method(:free))
-    end
-
-    def alloc_membind_policy_nodeset(size, nodeset, policy, flags=0)
-      begin
-        return alloc_membind_nodeset(size, nodeset, policy, flags)
-      rescue MembindError
-        set_membind_nodeset(nodeset, policy, flags)
-        ptr = alloc(size)
-        ptr.clear if policy != Hwloc::MEMBIND_FIRSTTOUCH
-        return ptr
-      end
     end
 
     def alloc_membind_policy(size, set, policy, flags=0)

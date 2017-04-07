@@ -27,22 +27,27 @@ module Hwloc
   end
 
   class TopologyMemSupport < BoolStruct
-    layout :set_thisproc_membind,   :uchar,
-           :get_thisproc_membind,   :uchar,
-           :set_proc_membind,       :uchar,
-           :get_proc_membind,       :uchar,
-           :set_thisthread_membind, :uchar,
-           :get_thisthread_membind, :uchar,
-           :set_area_membind,       :uchar,
-           :get_area_membind,       :uchar,
-           :alloc_membind,          :uchar,
-           :firsttouch_membind,     :uchar,
-           :bind_membind,           :uchar,
-           :interleave_membind,     :uchar,
-           :replicate_membind,      :uchar,
-           :nexttouch_membind,      :uchar,
-           :migrate_membind,        :uchar,
-           :get_area_memlocation,   :uchar
+    topology_mem_support_layout = [
+      :set_thisproc_membind,   :uchar,
+      :get_thisproc_membind,   :uchar,
+      :set_proc_membind,       :uchar,
+      :get_proc_membind,       :uchar,
+      :set_thisthread_membind, :uchar,
+      :get_thisthread_membind, :uchar,
+      :set_area_membind,       :uchar,
+      :get_area_membind,       :uchar,
+      :alloc_membind,          :uchar,
+      :firsttouch_membind,     :uchar,
+      :bind_membind,           :uchar,
+      :interleave_membind,     :uchar
+    ]
+    topology_mem_support_layout.push(:replicate_membind, :uchar) if API_VERSION < API_VERSION_2_0 
+    topology_mem_support_layout += [
+      :nexttouch_membind,      :uchar,
+      :migrate_membind,        :uchar,
+      :get_area_memlocation,   :uchar
+    ]
+    layout( *topology_mem_support_layout )
   end
 
   class TopologySupport < Struct
@@ -61,29 +66,37 @@ module Hwloc
   attach_function :hwloc_topology_dup, [:pointer, :topology], :int
   attach_function :hwloc_topology_check, [:topology], :void
 
-  attach_function :hwloc_topology_ignore_type, [:topology, :obj_type], :int
-  attach_function :hwloc_topology_ignore_type_keep_structure, [:topology, :obj_type], :int
-  attach_function :hwloc_topology_ignore_all_keep_structure, [:topology], :int
-
-  TopologyFlags = enum( FFI::find_type(:ulong), :topology_flags, [
-    :TOPOLOGY_FLAG_WHOLE_SYSTEM, 1<<0,
-    :TOPOLOGY_FLAG_IS_THISSYSTEM, 1<<1,
-    :TOPOLOGY_FLAG_IO_DEVICES, 1<<2,
-    :TOPOLOGY_FLAG_IO_BRIDGES, 1<<3,
-    :TOPOLOGY_FLAG_WHOLE_IO, 1<<4,
-    :TOPOLOGY_FLAG_ICACHES, 1<<5
-  ] )
+  if API_VERSION < API_VERSION_2_0 then
+    TopologyFlags = enum( FFI::find_type(:ulong), :topology_flags, [
+      :TOPOLOGY_FLAG_WHOLE_SYSTEM, 1<<0,
+      :TOPOLOGY_FLAG_IS_THISSYSTEM, 1<<1,
+      :TOPOLOGY_FLAG_IO_DEVICES, 1<<2,
+      :TOPOLOGY_FLAG_IO_BRIDGES, 1<<3,
+      :TOPOLOGY_FLAG_WHOLE_IO, 1<<4,
+      :TOPOLOGY_FLAG_ICACHES, 1<<5
+    ] )
+  else
+    TopologyFlags = enum( FFI::find_type(:ulong), :topology_flags, [
+      :TOPOLOGY_FLAG_WHOLE_SYSTEM, 1<<0,
+      :TOPOLOGY_FLAG_IS_THISSYSTEM, 1<<1,
+      :TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES, 1<<2
+    ] )
+  end
 
   attach_function :hwloc_topology_set_flags, [:topology, :ulong], :int
   attach_function :hwloc_topology_get_flags, [:topology], :ulong
 
   attach_function :hwloc_topology_set_pid, [:topology, :hwloc_pid_t], :int
-  attach_function :hwloc_topology_set_fsroot, [:topology, :string], :int
+  if API_VERSION < API_VERSION_2_0 then
+    attach_function :hwloc_topology_set_fsroot, [:topology, :string], :int
+  end
   attach_function :hwloc_topology_set_synthetic, [:topology, :string], :int
   attach_function :hwloc_topology_set_xml, [:topology, :string], :int
   attach_function :hwloc_topology_set_xmlbuffer, [:topology, :pointer, :size_t], :int
   attach_function :hwloc_topology_set_custom, [:topology], :int
-  attach_function :hwloc_topology_set_distance_matrix, [:topology, :obj_type, :uint, :pointer, :pointer], :int
+  if API_VERSION < API_VERSION_2_0 then
+    attach_function :hwloc_topology_set_distance_matrix, [:topology, :obj_type, :uint, :pointer, :pointer], :int
+  end
   attach_function :hwloc_topology_is_thissystem, [:topology], :int
 
   attach_function :hwloc_topology_get_support, [:topology], TopologySupport.ptr
@@ -96,13 +109,29 @@ module Hwloc
     :TYPE_DEPTH_BRIDGE, -3,
     :TYPE_DEPTH_PCI_DEVICE, -4,
     :TYPE_DEPTH_OS_DEVICE, -5
-  ] )
+  ] + ( API_VERSION >= API_VERSION_2_0 ? [ :TYPE_DEPTH_MISC, -6 ] : [] ) )
 
   attach_function :hwloc_get_type_depth, [:topology, :obj_type], :int
   attach_function :hwloc_get_depth_type, [:topology, :uint], :obj_type
   attach_function :hwloc_get_nbobjs_by_depth, [:topology, :uint], :uint
 
   attach_function :hwloc_get_obj_by_depth, [:topology, :uint, :uint], Obj.ptr
+
+  if API_VERSION < API_VERSION_2_0 then
+    attach_function :hwloc_topology_ignore_type, [:topology, :obj_type], :int
+    attach_function :hwloc_topology_ignore_type_keep_structure, [:topology, :obj_type], :int
+    attach_function :hwloc_topology_ignore_all_keep_structure, [:topology], :int
+  else
+    TypeFilter = enum(:type_filter, [
+      :TYPE_FILTER_KEEP_ALL, 0,
+      :TYPE_FILTER_KEEP_NONE, 1,
+      :TYPE_FILTER_KEEP_STRUCTURE, 2,
+      :TYPE_FILTER_KEEP_IMPORTANT, 3
+    ] )
+    attach_function :hwloc_topology_set_type_filter, [:topology, :obj_type, :type_filter], :int
+    attach_function :hwloc_topology_get_type_filter, [:topology, :obj_type, :pointer], :int
+    attach_function :hwloc_topology_set_all_types_filter, [:topology, :type_filter], :int
+  end
 
 end
 
@@ -167,21 +196,68 @@ module Hwloc
       return self
     end
 
-    def ignore_type(type)
-      err = Hwloc.hwloc_topology_ignore_type(@ptr, type)
-      raise TopologyError if err == -1
-      return self
-    end
-
-    def ignore_type_keep_structure(type)
-      if type == :all then
-        err = Hwloc.hwloc_topology_ignore_all_keep_structure(@ptr)
+    if API_VERSION < API_VERSION_2_0 then
+      def ignore_type(type)
+        err = Hwloc.hwloc_topology_ignore_type(@ptr, type)
         raise TopologyError if err == -1
-      else
-        err = Hwloc.hwloc_topology_ignore_type_keep_structure(@ptr, type)
-        raise TopologyError if err == -1
+        return self
       end
-      return self
+
+      def ignore_type_keep_structure(type)
+        if type == :all then
+          err = Hwloc.hwloc_topology_ignore_all_keep_structure(@ptr)
+          raise TopologyError if err == -1
+        else
+          err = Hwloc.hwloc_topology_ignore_type_keep_structure(@ptr, type)
+          raise TopologyError if err == -1
+        end
+        return self
+      end
+    else
+      def set_type_filter(type, filter)
+        if type == :all then
+          err = Hwloc.hwloc_topology_set_all_types_filter(@ptr, filter)
+          raise TopologyError if err == -1
+        else
+          err = Hwloc.hwloc_topology_set_type_filter(@ptr, type, filter)
+          raise TopologyError if err == -1
+        end
+        return self
+      end
+
+      def set_all_types_filter(filter)
+        return set_type_filter(:all, filter)
+      end
+
+      def get_type_filter(type)
+        filter_p = FFI::MemoryPointer::new(TypeFilter.native_type)
+        err = Hwloc.hwloc_topology_get_type_filter(@ptr, type, filter_p)
+        raise TopologyError if err == -1
+        filter = filter_p.read_int
+        return TypeFilter[filter]
+      end
+
+      def set_cache_types_filter(filter)
+        (Hwloc::OBJ_L1CACHE..Hwloc::OBJ_L3ICACHE).each { |cl|
+          set_type_filter(cl, filter)
+        }
+        return self
+      end
+
+      def set_icache_types_filter(filter)
+        (Hwloc::OBJ_L1ICACHE..Hwloc::OBJ_L3ICACHE).each { |cl|
+          set_type_filter(cl, filter)
+        }
+        return self
+      end
+
+      def set_io_types_filter(filter)
+        set_type_filter(Hwloc::OBJ_MISC, filter)
+        set_type_filter(Hwloc::OBJ_BRIDGE, filter)
+        set_type_filter(Hwloc::OBJ_PCI_DEVICE, filter)
+        set_type_filter(Hwloc::OBJ_OS_DEVICE, filter)
+        return self
+      end
     end
 
     def set_flags(flags)
@@ -204,10 +280,12 @@ module Hwloc
       return self
     end
 
-    def set_fsroot(fsroot_path)
-      err = Hwloc.hwloc_topology_set_fsroot(@ptr, fsroot_path)
-      raise TopologyError if err == -1
-      return self
+    if API_VERSION < API_VERSION_2_0 then
+      def set_fsroot(fsroot_path)
+        err = Hwloc.hwloc_topology_set_fsroot(@ptr, fsroot_path)
+        raise TopologyError if err == -1
+        return self
+      end
     end
 
     def set_synthetic(description)
@@ -228,10 +306,12 @@ module Hwloc
       return self
     end
 
-    def set_custom
-      err = Hwloc.hwloc_topology_set_custom(@ptr)
-      raise TopologyError if err == -1
-      return self
+    if API_VERSION < API_VERSION_2_0 then
+      def set_custom
+        err = Hwloc.hwloc_topology_set_custom(@ptr)
+        raise TopologyError if err == -1
+        return self
+      end
     end
 
 ## Will need some work to define properly...

@@ -3,21 +3,39 @@ module Hwloc
   class ObjError < Error
   end
 
-  ObjType = enum( :obj_type, [
+  obj_types = [
     :OBJ_SYSTEM,
     :OBJ_MACHINE,
     :OBJ_NUMANODE,
-    :OBJ_PACKAGE,
-    :OBJ_CACHE,
+    :OBJ_PACKAGE
+  ]
+  obj_types.push :OBJ_CACHE if API_VERSION < API_VERSION_2_0
+  obj_types += [
     :OBJ_CORE,
-    :OBJ_PU,
+    :OBJ_PU
+  ]
+  if API_VERSION >= API_VERSION_2_0 then
+    obj_types += [
+      :OBJ_L1CACHE,
+      :OBJ_L2CACHE,
+      :OBJ_L3CACHE,
+      :OBJ_L4CACHE,
+      :OBJ_L5CACHE,
+      :OBJ_L1ICACHE,
+      :OBJ_L2ICACHE,
+      :OBJ_L3ICACHE
+    ]
+  end
+  obj_types += [
     :OBJ_GROUP,
     :OBJ_MISC,
     :OBJ_BRIDGE,
     :OBJ_PCI_DEVICE,
     :OBJ_OS_DEVICE,
     :OBJ_TYPE_MAX
-  ] )
+  ]
+
+  ObjType = enum( :obj_type, obj_types )
 
   attach_function :hwloc_compare_types, [:obj_type, :obj_type], :int
 
@@ -109,12 +127,14 @@ module Hwloc
 
   end
 
-  class Distances < Struct
-    layout :relative_depth, :uint,
-           :nbobjs,         :uint,
-           :latency,        :pointer,
-           :latency_max,    :float,
-           :latency_base,   :float
+  if API_VERSION < API_VERSION_2_0 then
+    class Distances < Struct
+      layout :relative_depth, :uint,
+             :nbobjs,         :uint,
+             :latency,        :pointer,
+             :latency_max,    :float,
+             :latency_base,   :float
+    end
   end
 
   class ObjInfo < Struct
@@ -162,7 +182,14 @@ module Hwloc
   end
 
   class GroupAttr < Struct
-    layout :depth, :uint
+    group_layout = [ :depth, :uint ]
+    if API_VERSION >= API_VERSION_2_0 then
+      group_layout += [
+        :kind, :uint,
+        :subkind, :uint
+      ]
+    end
+    layout( *group_layout )
   end
 
   class PcidevAttr < Struct
@@ -216,43 +243,86 @@ module Hwloc
   class Obj < Struct
   end
 
+  if API_VERSION < API_VERSION_2_0 then
+    attach_function :hwloc_obj_type_string, [Obj.ptr], :string
+  else
+    attach_function :hwloc_type_name, [Obj.ptr], :string
+  end
   attach_function :hwloc_obj_type_snprintf, [:pointer, :size_t, Obj.ptr, :int], :int
   attach_function :hwloc_obj_attr_snprintf, [:pointer, :size_t, Obj.ptr, :string, :int], :int
 
   class Obj
-    layout_array = [
-      :type,             :obj_type,
-      :os_index,         :uint,
-      :name,             :string,
-      :memory,           ObjMemory,
-      :attr,             ObjAttr.ptr,
-      :depth,            :uint,
-      :logical_index,    :uint,
-      :os_level,         :int,
-      :next_cousin,      Obj.ptr,
-      :prev_cousin,      Obj.ptr,
-      :parent,           Obj.ptr,
-      :sibling_rank,     :uint,
-      :next_sibling,     Obj.ptr,
-      :prev_sibling,     Obj.ptr,
-      :arity,            :uint,
-      :children,         :pointer,
-      :first_child,      Obj.ptr,
-      :last_child,       Obj.ptr,
-      :user_data,        :pointer,
-      :cpuset,           :cpuset,
-      :complete_cpuset,  :cpuset,
-      :online_cpuset,    :cpuset,
-      :allowed_cpuset,   :cpuset,
-      :nodeset,          :nodeset,
-      :complete_nodeset, :nodeset,
-      :allowed_nodeset,  :nodeset,
-      :distances,        :pointer,
-      :distances_count,  :uint,
-      :infos,            :pointer,
-      :infos_count,      :uint,
-      :symmetric_subtree,:int
-    ]
+    if API_VERSION < API_VERSION_2_0 then
+      layout_array = [
+        :type,             :obj_type,
+        :os_index,         :uint,
+        :name,             :string,
+        :memory,           ObjMemory,
+        :attr,             ObjAttr.ptr,
+        :depth,            :uint,
+        :logical_index,    :uint,
+        :os_level,         :int,
+        :next_cousin,      Obj.ptr,
+        :prev_cousin,      Obj.ptr,
+        :parent,           Obj.ptr,
+        :sibling_rank,     :uint,
+        :next_sibling,     Obj.ptr,
+        :prev_sibling,     Obj.ptr,
+        :arity,            :uint,
+        :children,         :pointer,
+        :first_child,      Obj.ptr,
+        :last_child,       Obj.ptr,
+        :user_data,        :pointer,
+        :cpuset,           :cpuset,
+        :complete_cpuset,  :cpuset,
+        :online_cpuset,    :cpuset,
+        :allowed_cpuset,   :cpuset,
+        :nodeset,          :nodeset,
+        :complete_nodeset, :nodeset,
+        :allowed_nodeset,  :nodeset,
+        :distances,        :pointer,
+        :distances_count,  :uint,
+        :infos,            :pointer,
+        :infos_count,      :uint,
+        :symmetric_subtree,:int
+      ]
+    else
+      layout_array = [
+        :type,             :obj_type,
+        :subtype,          :string,
+        :os_index,         :uint,
+        :name,             :string,
+        :memory,           ObjMemory,
+        :attr,             ObjAttr.ptr,
+        :depth,            :uint,
+        :logical_index,    :uint,
+        :next_cousin,      Obj.ptr,
+        :prev_cousin,      Obj.ptr,
+        :parent,           Obj.ptr,
+        :sibling_rank,     :uint,
+        :next_sibling,     Obj.ptr,
+        :prev_sibling,     Obj.ptr,
+        :arity,            :uint,
+        :children,         :pointer,
+        :first_child,      Obj.ptr,
+        :last_child,       Obj.ptr,
+        :symmetric_subtree,:int,
+        :io_arity,         :uint,
+        :io_first_child,   Obj.ptr,
+        :misc_arity,       :uint,
+        :misc_first_child, Obj.ptr,
+        :cpuset,           :cpuset,
+        :complete_cpuset,  :cpuset,
+        :allowed_cpuset,   :cpuset,
+        :nodeset,          :nodeset,
+        :complete_nodeset, :nodeset,
+        :allowed_nodeset,  :nodeset,
+        :infos,            :pointer,
+        :infos_count,      :uint,
+        :user_data,        :pointer,
+        :gp_index,         :uint64
+      ]
+    end
 
     layout *layout_array
 
@@ -267,7 +337,16 @@ module Hwloc
       return str_ptr.read_string
     end
 
-    alias type_name type_snprintf
+    if API_VERSION < API_VERSION_2_0 then
+      def type_string
+        return Hwloc.hwloc_obj_type_string(self)
+      end
+      alias type_name type_string
+    else
+      def type_name
+        return Hwloc.hwloc_type_name(self)
+      end
+    end
 
     def attr_snprintf(verbose=0, separator=",")
       sz = Hwloc.hwloc_obj_attr_snprintf(nil, 0, self, separator, verbose) + 1
@@ -377,16 +456,18 @@ module Hwloc
       return each_descendant.to_a
     end
 
-    def distances
-      distances_count = self[:distances_count]
-      if distances_count == 0 then
-        return []
-      else
-        return self[:distances].read_array_of_pointer(distances_count).collect { |p|
-          d = Distances::new(p)
-          d.instance_variable_set(:@topology, @topology)
-          d
-        }
+    if API_VERSION < API_VERSION_2_0 then
+      def distances
+        distances_count = self[:distances_count]
+        if distances_count == 0 then
+          return []
+        else
+          return self[:distances].read_array_of_pointer(distances_count).collect { |p|
+            d = Distances::new(p)
+            d.instance_variable_set(:@topology, @topology)
+            d
+          }
+        end
       end
     end
 
