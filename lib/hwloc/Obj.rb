@@ -135,6 +135,44 @@ module Hwloc
              :latency_max,    :float,
              :latency_base,   :float
     end
+  else
+
+    DistancesKind = enum(FFI::find_type(:ulong), :distances_kind, [
+      :DISTANCES_KIND_FROM_OS,         1<<0,
+      :DISTANCES_KIND_FROM_USER,       1<<1,
+      :DISTANCES_KIND_MEANS_LATENCY,   1<<2,
+      :DISTANCES_KIND_MEANS_BANDWIDTH, 1<<3
+    ] )
+
+    class Distances < Struct
+      layout :nbobjs, :uint,
+             :objs,   :pointer,
+             :kind,   :ulong,
+             :values, :pointer
+
+      def objs
+        arity = self[:nbobjs]
+        if arity == 0 then
+          return []
+        else
+          return self[:objs].read_array_of_pointer(arity).collect { |p|
+            c = Obj::new(p)
+            c.instance_variable_set(:@topology, @topology)
+            c
+          }
+        end
+      end
+
+      def values
+        arity = self[:nbobjs]
+        arity *= arity
+        if arity == 0 then
+          return []
+        else
+          return self[:values].read_array_of_uint64(arity)
+        end
+      end
+    end
   end
 
   class ObjInfo < Struct

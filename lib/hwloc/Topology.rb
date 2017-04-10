@@ -96,6 +96,10 @@ module Hwloc
   attach_function :hwloc_topology_set_custom, [:topology], :int
   if API_VERSION < API_VERSION_2_0 then
     attach_function :hwloc_topology_set_distance_matrix, [:topology, :obj_type, :uint, :pointer, :pointer], :int
+  else
+    attach_function :hwloc_distances_get, [:topology, :pointer, :pointer, :ulong, :ulong], :int
+    attach_function :hwloc_distances_get_by_depth, [:topology, :uint, :pointer, :pointer, :ulong, :ulong], :int
+    attach_function :hwloc_distances_release, [:topology, Distances.ptr], :void
   end
   attach_function :hwloc_topology_is_thissystem, [:topology], :int
 
