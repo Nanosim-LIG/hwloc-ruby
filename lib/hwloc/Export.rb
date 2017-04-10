@@ -1,7 +1,16 @@
 module Hwloc
 
-  attach_function :hwloc_topology_export_xml, [:topology, :string], :int
-  attach_function :hwloc_topology_export_xmlbuffer, [:topology, :pointer, :pointer], :int
+  if API_VERSION < API_VERSION_2_0 then
+    attach_function :hwloc_topology_export_xml, [:topology, :string], :int
+    attach_function :hwloc_topology_export_xmlbuffer, [:topology, :pointer, :pointer], :int
+  else
+    TopologyExportXmlFlags = enum( FFI::find_type(:ulong), :topology_export_xml_flags, [
+      :TOPOLOGY_EXPORT_XML_FLAG_V1, 1<<0
+    ] )
+    attach_function :hwloc_topology_export_xml, [:topology, :string, :ulong], :int
+    attach_function :hwloc_topology_export_xmlbuffer, [:topology, :pointer, :pointer, :ulong], :int
+  end
+
   attach_function :hwloc_free_xmlbuffer, [:topology, :pointer], :void
 
   callback :hwloc_topology_set_userdata_export_callback_callback, [:pointer, :topology, Obj.ptr], :void
@@ -25,19 +34,36 @@ module Hwloc
 
   class Topology
 
-    def export_xml(xmlpath)
-      err = Hwloc.hwloc_topology_export_xml(@ptr, xmlpath)
-      raise ExportError if err == -1
-      return self
-    end
+    if API_VERSION < API_VERSION_2_0 then
+      def export_xml(xmlpath)
+        err = Hwloc.hwloc_topology_export_xml(@ptr, xmlpath)
+        raise ExportError if err == -1
+        return self
+      end
 
-    def export_xmlbuffer
-      data_p = FFI::MemoryPointer::new(:pointer)
-      count_p = FFI::MemoryPointer::new(:int)
-      err = Hwloc.hwloc_topology_export_xmlbuffer(@ptr, data_p, count_p)
-      raise ExportError if err == -1
-      xmlbuffer_p = data_p.read_pointer.slice(0, count_p.read_int)
-      return FFI::AutoPointer::new(xmlbuffer_p, self.method(:free_xmlbuffer))
+      def export_xmlbuffer
+        data_p = FFI::MemoryPointer::new(:pointer)
+        count_p = FFI::MemoryPointer::new(:int)
+        err = Hwloc.hwloc_topology_export_xmlbuffer(@ptr, data_p, count_p)
+        raise ExportError if err == -1
+        xmlbuffer_p = data_p.read_pointer.slice(0, count_p.read_int)
+        return FFI::AutoPointer::new(xmlbuffer_p, self.method(:free_xmlbuffer))
+      end
+    else
+      def export_xml(xmlpath, flags=0)
+        err = Hwloc.hwloc_topology_export_xml(@ptr, xmlpath, flags)
+        raise ExportError if err == -1
+        return self
+      end
+
+      def export_xmlbuffer(flags = 0)
+        data_p = FFI::MemoryPointer::new(:pointer)
+        count_p = FFI::MemoryPointer::new(:int)
+        err = Hwloc.hwloc_topology_export_xmlbuffer(@ptr, data_p, count_p, flags)
+        raise ExportError if err == -1
+        xmlbuffer_p = data_p.read_pointer.slice(0, count_p.read_int)
+        return FFI::AutoPointer::new(xmlbuffer_p, self.method(:free_xmlbuffer))
+      end
     end
 
     def free_xmlbuffer(pointer)

@@ -93,8 +93,8 @@ module Hwloc
   attach_function :hwloc_topology_set_synthetic, [:topology, :string], :int
   attach_function :hwloc_topology_set_xml, [:topology, :string], :int
   attach_function :hwloc_topology_set_xmlbuffer, [:topology, :pointer, :size_t], :int
-  attach_function :hwloc_topology_set_custom, [:topology], :int
   if API_VERSION < API_VERSION_2_0 then
+    attach_function :hwloc_topology_set_custom, [:topology], :int
     attach_function :hwloc_topology_set_distance_matrix, [:topology, :obj_type, :uint, :pointer, :pointer], :int
   else
     attach_function :hwloc_distances_get, [:topology, :pointer, :pointer, :ulong, :ulong], :int
@@ -105,9 +105,7 @@ module Hwloc
     attach_function :hwloc_distances_remove_by_depth, [:topology, :uint], :int
   end
   attach_function :hwloc_topology_is_thissystem, [:topology], :int
-
   attach_function :hwloc_topology_get_support, [:topology], TopologySupport.ptr
-
   attach_function :hwloc_topology_get_depth, [:topology], :uint
 
   GetTypeDepth = enum(:get_type_depth, [
@@ -264,6 +262,14 @@ module Hwloc
         set_type_filter(Hwloc::OBJ_PCI_DEVICE, filter)
         set_type_filter(Hwloc::OBJ_OS_DEVICE, filter)
         return self
+      end
+
+      def ignore_type(type)
+        return set_type_filter(type, Hwloc::TYPE_FILTER_KEEP_NONE)
+      end
+
+      def ignore_type_keep_structure(type)
+        set_type_filter(type, Hwloc::TYPE_FILTER_KEEP_STRUCTURE)
       end
     end
 

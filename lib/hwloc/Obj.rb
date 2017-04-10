@@ -452,6 +452,83 @@ module Hwloc
       return children.each(*args, &block)
     end
 
+    if API_VERSION < API_VERSION_2_0 then
+      def each_obj(&block)
+        if block then
+          block.call self
+          children.each { |c|
+            c.each_obj(&block)
+          }
+          return self
+        else
+          to_enum(:each_obj)
+        end
+      end
+
+      def each_descendant(&block)
+        if block then
+          children.each { |c|
+            c.each_obj(&block)
+          }
+        else
+          to_enum(:each_descendant)
+        end
+      end
+
+    else
+
+      def io_children
+        return [] if io_arity == 0
+        c = []
+        c.push( io_first_child )
+        (io_arity-1).times {
+          c.push( c[-1].next_sibling )
+        }
+        return c
+      end
+
+      def each_io_child(*args, &block)
+        return io_children.each(*args, &block)
+      end
+
+      def misc_children
+        return [] if misc_arity == 0
+        c = []
+        c.push( misc_first_child )
+        (misc_arity-1).times {
+          c.push( c[-1].next_sibling )
+        }
+        return c
+      end
+
+      def each_misc_child(*args, &block)
+        return misc_children.each(*args, &block)
+      end
+
+      def each_obj(&block)
+        if block then
+          block.call self
+          (children+io_children+misc_children).each { |c|
+            c.each_obj(&block)
+          }
+          return self
+        else
+          to_enum(:each_obj)
+        end
+      end
+
+      def each_descendant(&block)
+        if block then
+          (children+io_children+misc_children).each { |c|
+            c.each_obj(&block)
+          }
+        else
+          to_enum(:each_descendant)
+        end
+      end
+
+    end
+
     def each_parent(&block)
       if block then
         if parent then
@@ -471,29 +548,7 @@ module Hwloc
     alias ancestors parents
     alias each_ancestor each_parent
 
-    def each_obj(&block)
-      if block then
-        block.call self
-        children.each { |c|
-          c.each_obj(&block)
-        }
-        return self
-      else
-        to_enum(:each_obj)
-      end
-    end
-
     alias traverse each_obj
-
-    def each_descendant
-      if block then
-        children.each { |c|
-          c.each_obj(&block)
-        }
-      else
-        to_enum(:each_descendant)
-      end
-    end
 
     def descendants
       return each_descendant.to_a
@@ -537,8 +592,6 @@ module Hwloc
       return nil if at.to_ptr.null?
       t = self[:type]
       case t
-      when :OBJ_CACHE
-        return at[:cache]
       when :OBJ_GROUP
         return at[:group]
       when :OBJ_PCI_DEVICE
@@ -547,6 +600,8 @@ module Hwloc
         return at[:bridge]
       when :OBJ_OS_DEVICE
         return at[:osdev]
+      else
+        return at[:cache] if self.is_a_cache?
       end
       return nil
     end

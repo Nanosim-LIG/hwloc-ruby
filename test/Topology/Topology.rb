@@ -31,11 +31,19 @@ class TopologyTest < BaseTest
 
   def test_set_get_flags
     t = Hwloc::Topology::new
-    t.flags = Hwloc::Topology::FLAG_IO_DEVICES
+    if Hwloc::API_VERSION < Hwloc::API_VERSION_2_0
+      t.flags = Hwloc::Topology::FLAG_IO_DEVICES
+    else
+      t.set_io_types_filter(:TYPE_FILTER_KEEP_ALL)
+    end
     t.set_xml('./pilipili2.topo.xml')
     t.load
     assert( t.each_obj.count > @topology.each_obj.count )
-    assert( t.get_flags == Hwloc::Topology::FLAG_IO_DEVICES )
+    if Hwloc::API_VERSION < Hwloc::API_VERSION_2_0
+      assert( t.get_flags == Hwloc::Topology::FLAG_IO_DEVICES )
+    else
+      assert( t.get_type_filter( Hwloc::OBJ_PCI_DEVICE ) == :TYPE_FILTER_KEEP_ALL )
+    end
   end
 
   def test_is_thissystem
@@ -53,7 +61,7 @@ class TopologyTest < BaseTest
       @topology.get_depth_type(-1)
     }
     assert_equal(e.message, "Invalid argument")
-    assert_equal(Hwloc::TYPE_DEPTH_MULTIPLE, @topology.get_type_depth(:OBJ_CACHE))
+    assert_equal(Hwloc::TYPE_DEPTH_MULTIPLE, @topology.get_type_depth(:OBJ_CACHE)) if Hwloc::API_VERSION < Hwloc::API_VERSION_2_0
   end
 
   def test_type_or_above_below_depth
@@ -76,7 +84,11 @@ class TopologyTest < BaseTest
 
   def test_each_by_type
     assert_equal(12, @topology.each_by_type(:OBJ_CORE).count)
-    assert_equal(26, @topology.each_by_type(:OBJ_CACHE).count)
+    if Hwloc::API_VERSION < Hwloc::API_VERSION_2_0 then
+      assert_equal(26, @topology.each_by_type(:OBJ_CACHE).count)
+    else
+      assert_equal(26, @topology.select{ |o| o.is_a_cache? }.count)
+    end
     assert_equal(0, @topology.each_by_type(:OBJ_BRIDGE).count)
   end
 
