@@ -100,6 +100,9 @@ module Hwloc
     attach_function :hwloc_distances_get, [:topology, :pointer, :pointer, :ulong, :ulong], :int
     attach_function :hwloc_distances_get_by_depth, [:topology, :uint, :pointer, :pointer, :ulong, :ulong], :int
     attach_function :hwloc_distances_release, [:topology, Distances.ptr], :void
+    attach_function :hwloc_distances_add, [:topology, :uint, :pointer, :pointer, :ulong, :ulong], :int
+    attach_function :hwloc_distances_remove, [:topology], :int
+    attach_function :hwloc_distances_remove_by_depth, [:topology, :uint], :int
   end
   attach_function :hwloc_topology_is_thissystem, [:topology], :int
 

@@ -142,7 +142,12 @@ module Hwloc
       :DISTANCES_KIND_FROM_USER,       1<<1,
       :DISTANCES_KIND_MEANS_LATENCY,   1<<2,
       :DISTANCES_KIND_MEANS_BANDWIDTH, 1<<3
-    ] )
+    ])
+
+    DistancesFlag = enum(FFI::find_type(:ulong), :distances_flag, [
+      :DISTANCES_FLAG_GROUP,            1<<0,
+      :DISTANCES_FLAG_GROUP_INACCURATE, 1<<1
+    ])
 
     class Distances < Struct
       layout :nbobjs, :uint,
