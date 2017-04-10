@@ -287,9 +287,9 @@ module Hwloc
   end
 
   if API_VERSION < API_VERSION_2_0 then
-    attach_function :hwloc_obj_type_string, [Obj.ptr], :string
+    attach_function :hwloc_obj_type_string, [:obj_type], :string
   else
-    attach_function :hwloc_type_name, [Obj.ptr], :string
+    attach_function :hwloc_type_name, [:obj_type], :string
   end
   attach_function :hwloc_obj_type_snprintf, [:pointer, :size_t, Obj.ptr, :int], :int
   attach_function :hwloc_obj_attr_snprintf, [:pointer, :size_t, Obj.ptr, :string, :int], :int
@@ -382,12 +382,12 @@ module Hwloc
 
     if API_VERSION < API_VERSION_2_0 then
       def type_string
-        return Hwloc.hwloc_obj_type_string(self)
+        return Hwloc.hwloc_obj_type_string(type)
       end
       alias type_name type_string
     else
       def type_name
-        return Hwloc.hwloc_type_name(self)
+        return Hwloc.hwloc_type_name(type)
       end
     end
 
