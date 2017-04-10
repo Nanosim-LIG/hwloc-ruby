@@ -13,6 +13,8 @@ class ObjTest < BaseTest
     c2 = o.last_child
     assert_equal(@topology, c1.topology)
     assert_equal(:OBJ_NUMANODE, c1.type)
+    assert(c1.is_a_numanode?)
+    assert(!c1.is_a_core?)
     assert_equal([c1, c2], o.children)
     assert_equal(o, c1.parent)
     assert_equal(c1, c2.previous_sibling)

@@ -508,6 +508,20 @@ module Hwloc
       return nil
     end
 
+    ObjType.symbols[0..-1].each { |sym|
+      suffix = sym.to_s[4..-1].downcase
+      methname = "is_a_#{suffix}?"
+      define_method(methname) {
+        return type == sym
+      }
+    }
+
+    if API_VERSION >= API_VERSION_2_0 then
+      def is_a_cache?
+        (Hwloc::OBJ_L1CACHE..Hwloc::OBJ_L3ICACHE).include?(ObjType[type])
+      end
+    end
+
   end
 
 end
