@@ -54,10 +54,11 @@ caches.each_with_index { |c,i|
 
 #migrate the execution to different OBJ_PU
 t.pus.shuffle.first(3).each { |pu|
-  t.set_cpubind(pu.cpuset)
-  puts "Processing on #{pu} #P#{pu.os_index}"
-  i = 0
-  (1<<26).times { i+=1 }
+  t.set_cpubind(pu.cpuset) {
+    puts "Processing on #{t.get_cpubind.to_a}"
+    i = 0
+    (1<<26).times { i+=1 }
+  }
 }
 
 #allocate memory on different nodes using hwloc (if you have any)

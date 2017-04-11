@@ -54,9 +54,16 @@ module Hwloc
   class Topology
 
     def set_cpubind(cpuset, flags = 0)
-      err = Hwloc.hwloc_set_cpubind(@ptr, cpuset, flags)
-      raise CpubindError if err == -1
-      return self
+      if block_given? then
+        oldcpuset = get_cpubind(flags)
+        set_cpubind(cpuset, flags)
+        yield
+        set_cpubind(oldcpuset, flags)
+      else
+        err = Hwloc.hwloc_set_cpubind(@ptr, cpuset, flags)
+        raise CpubindError if err == -1
+        return self
+      end
     end
 
     def get_cpubind(flags = 0)
@@ -207,9 +214,16 @@ module Hwloc
     end
 
     def set_membind(set, policy, flags=0)
-      err = Hwloc.hwloc_set_membind(@ptr, set, policy, flags)
-      raise MembindError if err == -1
-      return self
+      if block_given? then
+        oldset, oldpolicy = get_membind(flags)
+        set_membind(set, policy, flags)
+        yield
+        set_membind(oldset, oldpolicy, flags)
+      else
+        err = Hwloc.hwloc_set_membind(@ptr, set, policy, flags)
+        raise MembindError if err == -1
+        return self
+      end
     end
 
     def get_membind(flags=0)
