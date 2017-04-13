@@ -137,22 +137,22 @@ module Hwloc
     end
   else
 
-    DistancesKind = enum(FFI::find_type(:ulong), :distances_kind, [
-      :DISTANCES_KIND_FROM_OS,         1<<0,
-      :DISTANCES_KIND_FROM_USER,       1<<1,
-      :DISTANCES_KIND_MEANS_LATENCY,   1<<2,
-      :DISTANCES_KIND_MEANS_BANDWIDTH, 1<<3
+    DistancesKind = bitmask(FFI::find_type(:ulong), :distances_kind, [
+      :DISTANCES_KIND_FROM_OS,
+      :DISTANCES_KIND_FROM_USER,
+      :DISTANCES_KIND_MEANS_LATENCY,
+      :DISTANCES_KIND_MEANS_BANDWIDTH
     ])
 
-    DistancesFlag = enum(FFI::find_type(:ulong), :distances_flag, [
-      :DISTANCES_FLAG_GROUP,            1<<0,
-      :DISTANCES_FLAG_GROUP_INACCURATE, 1<<1
+    DistancesFlag = bitmask(FFI::find_type(:ulong), :distances_flag, [
+      :DISTANCES_FLAG_GROUP,
+      :DISTANCES_FLAG_GROUP_INACCURATE
     ])
 
     class Distances < Struct
       layout :nbobjs, :uint,
              :objs,   :pointer,
-             :kind,   :ulong,
+             :kind,   :distances_kind,
              :values, :pointer
 
       def objs

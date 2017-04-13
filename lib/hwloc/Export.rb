@@ -4,11 +4,11 @@ module Hwloc
     attach_function :hwloc_topology_export_xml, [:topology, :string], :int
     attach_function :hwloc_topology_export_xmlbuffer, [:topology, :pointer, :pointer], :int
   else
-    TopologyExportXmlFlags = enum( FFI::find_type(:ulong), :topology_export_xml_flags, [
-      :TOPOLOGY_EXPORT_XML_FLAG_V1, 1<<0
+    TopologyExportXmlFlags = bitmask( FFI::find_type(:ulong), :topology_export_xml_flags, [
+      :TOPOLOGY_EXPORT_XML_FLAG_V1
     ] )
-    attach_function :hwloc_topology_export_xml, [:topology, :string, :ulong], :int
-    attach_function :hwloc_topology_export_xmlbuffer, [:topology, :pointer, :pointer, :ulong], :int
+    attach_function :hwloc_topology_export_xml, [:topology, :string, :topology_export_xml_flags], :int
+    attach_function :hwloc_topology_export_xmlbuffer, [:topology, :pointer, :pointer, :topology_export_xml_flags], :int
   end
 
   attach_function :hwloc_free_xmlbuffer, [:topology, :pointer], :void
@@ -22,12 +22,12 @@ module Hwloc
   callback :hwloc_topology_set_userdata_import_callback_callback, [:topology, Obj.ptr, :string, :pointer, :size_t], :void
   attach_function :hwloc_topology_set_userdata_import_callback, [:topology, :hwloc_topology_set_userdata_import_callback_callback], :void
 
-  TopologyExportSyntheticFlags = enum( FFI::find_type(:ulong), :topology_export_synthetic_flags, [
-    :TOPOLOGY_EXPORT_SYNTHETIC_FLAG_NO_EXTENDED_TYPES, 1<<0,
-    :TOPOLOGY_EXPORT_SYNTHETIC_FLAG_NO_ATTRS, 1<<1
+  TopologyExportSyntheticFlags = bitmask( FFI::find_type(:ulong), :topology_export_synthetic_flags, [
+    :TOPOLOGY_EXPORT_SYNTHETIC_FLAG_NO_EXTENDED_TYPES,
+    :TOPOLOGY_EXPORT_SYNTHETIC_FLAG_NO_ATTRS
   ] )
 
-  attach_function :hwloc_topology_export_synthetic, [:topology, :pointer, :size_t, :uint], :int
+  attach_function :hwloc_topology_export_synthetic, [:topology, :pointer, :size_t, :topology_export_synthetic_flags], :int
 
   class ExportError < TopologyError
   end

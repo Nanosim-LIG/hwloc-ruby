@@ -1,4 +1,5 @@
 require 'ffi'
+require 'ffi/bitmask'
 
 module Hwloc
   extend FFI::Library

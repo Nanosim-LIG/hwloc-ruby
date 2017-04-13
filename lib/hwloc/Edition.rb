@@ -13,20 +13,20 @@ module Hwloc
   end
 
   if API_VERSION < API_VERSION_2_0 then
-    RestrictFlags = enum( FFI::find_type(:ulong), :restrict_flags, [
-      :RESTRICT_FLAG_ADAPT_DISTANCES, 1<<0,
-      :RESTRICT_FLAG_ADAPT_MISC, 1<<1,
-      :RESTRICT_FLAG_ADAPT_IO, 1<<2
+    RestrictFlags = bitmask( FFI::find_type(:ulong), :restrict_flags, [
+      :RESTRICT_FLAG_ADAPT_DISTANCES,
+      :RESTRICT_FLAG_ADAPT_MISC,
+      :RESTRICT_FLAG_ADAPT_IO
     ] )
   else
-    RestrictFlags = enum( FFI::find_type(:ulong), :restrict_flags, [
-      :RESTRICT_FLAG_REMOVE_CPULESS, 1<<0,
-      :RESTRICT_FLAG_ADAPT_MISC, 1<<1,
-      :RESTRICT_FLAG_ADAPT_IO, 1<<2
+    RestrictFlags = bitmask( FFI::find_type(:ulong), :restrict_flags, [
+      :RESTRICT_FLAG_REMOVE_CPULESS,
+      :RESTRICT_FLAG_ADAPT_MISC,
+      :RESTRICT_FLAG_ADAPT_IO
     ] )
   end
 
-  attach_function :hwloc_topology_restrict, [:topology, :cpuset, :ulong], :int
+  attach_function :hwloc_topology_restrict, [:topology, :cpuset, :restrict_flags], :int
 
   class EditionError < TopologyError
   end

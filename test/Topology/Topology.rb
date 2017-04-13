@@ -40,9 +40,9 @@ class TopologyTest < BaseTest
     t.load
     assert( t.each_obj.count > @topology.each_obj.count )
     if Hwloc::API_VERSION < Hwloc::API_VERSION_2_0
-      assert( t.get_flags == Hwloc::Topology::FLAG_IO_DEVICES )
+      assert_equal([:TOPOLOGY_FLAG_IO_DEVICES], t.get_flags)
     else
-      assert( t.get_type_filter( Hwloc::OBJ_PCI_DEVICE ) == :TYPE_FILTER_KEEP_ALL )
+      assert_equal(:TYPE_FILTER_KEEP_ALL, t.get_type_filter( Hwloc::OBJ_PCI_DEVICE ) )
     end
   end
 
