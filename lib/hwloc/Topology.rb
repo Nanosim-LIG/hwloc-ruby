@@ -57,7 +57,11 @@ module Hwloc
   end
 
   typedef :pointer, :topology
-  typedef :pthread_t, :hwloc_thread_t
+  begin
+    typedef :pthread_t, :hwloc_thread_t
+  rescue TypeError
+    typedef :pointer, :hwloc_thread_t
+  end
   typedef :pid_t, :hwloc_pid_t
 
   attach_function :hwloc_topology_init, [:pointer], :int
