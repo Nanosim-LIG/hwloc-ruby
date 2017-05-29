@@ -11,7 +11,7 @@ module Hwloc
   API_VERSION_1_10 = 0x00010a00
   API_VERSION_2_0 = 0x00020000
 
-  raise RuntimeError, "Wrong hwloc api version (#{API_VERSION.to_s(16)})!" if API_VERSION < 0x00010a00
+  raise LoadError, "Wrong hwloc api version (#{API_VERSION.to_s(16)})!" if API_VERSION < 0x00010a00
 
   attach_function :strerror, [:int], :string
 
