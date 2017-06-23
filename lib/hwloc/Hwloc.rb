@@ -3,8 +3,12 @@ require 'ffi/bitmask'
 
 module Hwloc
   extend FFI::Library
-  ffi_lib 'hwloc'
 
+  if ENV['HWLOC_LIBRARY_PATH']
+    ffi_lib ENV['HWLOC_LIBRARY_PATH']
+  else
+    ffi_lib 'hwloc'
+  end
   attach_function :hwloc_get_api_version, [], :uint
 
   API_VERSION = Hwloc.hwloc_get_api_version
