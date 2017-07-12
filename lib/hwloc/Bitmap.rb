@@ -113,11 +113,15 @@ module Hwloc
       s_ptr.read_string
     end
 
-    def to_a
+    def list_to_s
       size = Hwloc.hwloc_bitmap_list_snprintf(nil, 0, @ptr)
       s_ptr = FFI::MemoryPointer::new(size+1)
       Hwloc.hwloc_bitmap_list_snprintf(s_ptr, size+1, @ptr)
-      str = s_ptr.read_string
+      s_ptr.read_string
+    end
+
+    def to_a
+      str = list_to_s
       str.split(",").collect { |e|
         if e.match("-") then
           rgs = e.split("-")
