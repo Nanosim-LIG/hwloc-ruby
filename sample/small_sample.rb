@@ -28,7 +28,11 @@ else
 end
 t.load
 
-$page_size = t.machines.first.memory.page_types.first.size
+if Hwloc::API_VERSION < Hwloc::API_VERSION_2_0
+  $page_size = t.machines.first.memory.page_types.first.size
+else
+  $page_size = 4*1024
+end
 
 #Get some info on the machine:
 

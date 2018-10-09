@@ -194,6 +194,20 @@ module Hwloc
     end
   end
 
+  class NumanodeAttr < Struct
+    layout :local_memory, :uint64,
+           :page_types_len, :uint,
+           :page_types, :pointer
+    def page_types
+      page_types_ptr = self[:page_types]
+      return page_types_len.times.collect { |i|
+        pt = ObjMemoryPageType::new(page_types_ptr+i*ObjMemoryPageType.size)
+        pt.instance_variable_set(:@topology, @topology)
+        pt
+      }
+    end
+  end
+
   class CacheAttr < Struct
     layout :size,          :uint64,
            :depth,         :uint,
@@ -257,11 +271,20 @@ module Hwloc
   end
 
   class ObjAttr < Union
-    layout :cache,  CacheAttr,
-           :group,  GroupAttr,
-           :pcidev, PcidevAttr,
-           :bridge, BridgeAttr,
-           :osdev,  OsdevAttr
+    if API_VERSION < API_VERSION_2_0 then
+      layout :cache,  CacheAttr,
+             :group,  GroupAttr,
+             :pcidev, PcidevAttr,
+             :bridge, BridgeAttr,
+             :osdev,  OsdevAttr
+    else
+      layout :numanode, NumanodeAttr,
+             :cache,  CacheAttr,
+             :group,  GroupAttr,
+             :pcidev, PcidevAttr,
+             :bridge, BridgeAttr,
+             :osdev,  OsdevAttr
+    end
   end
 
   class Obj < Struct
@@ -307,39 +330,41 @@ module Hwloc
       ]
     else
       layout_array = [
-        :type,             :obj_type,
-        :subtype,          :string,
-        :os_index,         :uint,
-        :name,             :string,
-        :memory,           ObjMemory,
-        :attr,             ObjAttr.ptr,
-        :depth,            :uint,
-        :logical_index,    :uint,
-        :next_cousin,      Obj.ptr,
-        :prev_cousin,      Obj.ptr,
-        :parent,           Obj.ptr,
-        :sibling_rank,     :uint,
-        :next_sibling,     Obj.ptr,
-        :prev_sibling,     Obj.ptr,
-        :arity,            :uint,
-        :children,         :pointer,
-        :first_child,      Obj.ptr,
-        :last_child,       Obj.ptr,
-        :symmetric_subtree,:int,
-        :io_arity,         :uint,
-        :io_first_child,   Obj.ptr,
-        :misc_arity,       :uint,
-        :misc_first_child, Obj.ptr,
-        :cpuset,           :cpuset,
-        :complete_cpuset,  :cpuset,
-        :allowed_cpuset,   :cpuset,
-        :nodeset,          :nodeset,
-        :complete_nodeset, :nodeset,
-        :allowed_nodeset,  :nodeset,
-        :infos,            :pointer,
-        :infos_count,      :uint,
-        :user_data,        :pointer,
-        :gp_index,         :uint64
+        :type,              :obj_type,
+        :subtype,           :string,
+        :os_index,          :uint,
+        :name,              :string,
+        :total_memory,      :uint64,
+        :attr,              ObjAttr.ptr,
+        :depth,             :uint,
+        :logical_index,     :uint,
+        :next_cousin,       Obj.ptr,
+        :prev_cousin,       Obj.ptr,
+        :parent,            Obj.ptr,
+        :sibling_rank,      :uint,
+        :next_sibling,      Obj.ptr,
+        :prev_sibling,      Obj.ptr,
+        :arity,             :uint,
+        :children,          :pointer,
+        :first_child,       Obj.ptr,
+        :last_child,        Obj.ptr,
+        :symmetric_subtree, :int,
+        :memory_arity,      :uint,
+        :memory_first_child,Obj.ptr,
+        :io_arity,          :uint,
+        :io_first_child,    Obj.ptr,
+        :misc_arity,        :uint,
+        :misc_first_child,  Obj.ptr,
+        :cpuset,            :cpuset,
+        :complete_cpuset,   :cpuset,
+        :allowed_cpuset,    :cpuset,
+        :nodeset,           :nodeset,
+        :complete_nodeset,  :nodeset,
+        :allowed_nodeset,   :nodeset,
+        :infos,             :pointer,
+        :infos_count,       :uint,
+        :user_data,         :pointer,
+        :gp_index,          :uint64
       ]
     end
 
@@ -571,6 +596,9 @@ module Hwloc
       when :OBJ_OS_DEVICE
         return at[:osdev]
       else
+	if API_VERSION >= API_VERSION_2_0 then
+          return at[:numanode] if t == :OBJ_NUMANODE
+        end
         return at[:cache] if self.is_a_cache?
       end
       return nil
