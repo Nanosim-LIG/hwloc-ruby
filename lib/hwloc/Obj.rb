@@ -3,40 +3,21 @@ module Hwloc
   class ObjError < Error
   end
 
-  obj_types = [
-    :OBJ_SYSTEM,
-    :OBJ_MACHINE,
-    :OBJ_NUMANODE,
-    :OBJ_PACKAGE
-  ]
-  obj_types.push :OBJ_CACHE if API_VERSION < API_VERSION_2_0
-  obj_types += [
-    :OBJ_CORE,
-    :OBJ_PU
-  ]
-  if API_VERSION >= API_VERSION_2_0 then
-    obj_types += [
-      :OBJ_L1CACHE,
-      :OBJ_L2CACHE,
-      :OBJ_L3CACHE,
-      :OBJ_L4CACHE,
-      :OBJ_L5CACHE,
-      :OBJ_L1ICACHE,
-      :OBJ_L2ICACHE,
-      :OBJ_L3ICACHE
-    ]
+  attach_function :hwloc_obj_type_string, [:int], :string
+
+  obj_types = []
+
+  i = 0
+  loop do
+    str = Hwloc.hwloc_obj_type_string(i)
+    break if str == "Unknown"
+    obj_types.push :"OBJ_#{str.upcase.gsub("PCIDev", "PCI_DEVICE").gsub("OSDev", "OS_DEVICE")}"
+    i += 1
   end
-  obj_types += [
-    :OBJ_GROUP,
-    :OBJ_MISC,
-    :OBJ_BRIDGE,
-    :OBJ_PCI_DEVICE,
-    :OBJ_OS_DEVICE,
-    :OBJ_TYPE_MAX
-  ]
 
   ObjType = enum( :obj_type, obj_types )
 
+  attach_function :hwloc_obj_type_string, [:obj_type], :string
   attach_function :hwloc_compare_types, [:obj_type, :obj_type], :int
 
   def self.compare_types(type1, type2)
@@ -286,7 +267,6 @@ module Hwloc
   class Obj < Struct
   end
 
-  attach_function :hwloc_obj_type_string, [:obj_type], :string
   attach_function :hwloc_obj_type_snprintf, [:pointer, :size_t, Obj.ptr, :int], :int
   attach_function :hwloc_obj_attr_snprintf, [:pointer, :size_t, Obj.ptr, :string, :int], :int
 
