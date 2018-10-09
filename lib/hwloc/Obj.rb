@@ -357,10 +357,8 @@ module Hwloc
         :misc_first_child,  Obj.ptr,
         :cpuset,            :cpuset,
         :complete_cpuset,   :cpuset,
-        :allowed_cpuset,    :cpuset,
         :nodeset,           :nodeset,
         :complete_nodeset,  :nodeset,
-        :allowed_nodeset,   :nodeset,
         :infos,             :pointer,
         :infos_count,       :uint,
         :user_data,         :pointer,
@@ -472,6 +470,20 @@ module Hwloc
 
     else
 
+      def memory_children
+        return [] if memory_arity == 0
+        c = []
+        c.push( memory_first_child )
+        (memory_arity-1).times {
+          c.push( c[-1].next_sibling )
+        }
+        return c
+      end
+
+      def each_memory_child(*args, &block)
+        return memory_children.each(*args, &block)
+      end
+
       def io_children
         return [] if io_arity == 0
         c = []
@@ -573,7 +585,7 @@ module Hwloc
           o = ObjInfo::new(self[:infos] + i*ObjInfo.size)
         }
 	inf_h = {}
-	inf_array.each { |e| inf_h[e[:name].to_sym] = e[:value] }
+	inf_array.each { |e| inf_h[e[:name].to_sym] = e[:value] if e[:name] }
 	return inf_h
       end
     end
