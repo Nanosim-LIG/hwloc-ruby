@@ -446,20 +446,22 @@ module Hwloc
         end
         return self
       else
-        return Enumerator::new do |yielder|
-          idx = 0
-          while o = get_obj_by_depth(depth, idx) do
-            yielder << o
-            idx += 1
-          end
-        end
+        to_enum(:each_by_depth, depth)
       end
     end
 
     def each_by_type(type, &block)
-      depth = get_type_depth(type)
-      return each_obj.select{ |e| e.type == type }.each(&block) if depth == Hwloc::TYPE_DEPTH_MULTIPLE
-      return each_by_depth(depth, &block)
+      if block_given? then
+        depth = get_type_depth(type)
+        if depth == Hwloc::TYPE_DEPTH_MULTIPLE
+          each_obj.select{ |e| e.type == type }.each(&block)
+          return self
+        else
+          return each_by_depth(depth, &block)
+        end
+      else
+        to_enum(:each_by_type, type)
+      end
     end
 
     ObjType.symbols[0..-1].each { |sym|
