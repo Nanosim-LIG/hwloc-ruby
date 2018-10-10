@@ -11,7 +11,7 @@ module Hwloc
   loop do
     str = Hwloc.hwloc_obj_type_string(i)
     break if str == "Unknown"
-    obj_types.push :"OBJ_#{str.upcase.gsub("PCIDev", "PCI_DEVICE").gsub("OSDev", "OS_DEVICE")}"
+    obj_types.push :"OBJ_#{str.upcase.gsub("PCIDEV", "PCI_DEVICE").gsub("OSDEV", "OS_DEVICE")}"
     i += 1
   end
 

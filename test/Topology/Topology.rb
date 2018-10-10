@@ -54,9 +54,16 @@ class TopologyTest < BaseTest
   end
 
   def test_depth
-    assert_equal(8, @topology.depth)
-    assert_equal(6, @topology.get_type_depth(:OBJ_CORE))
-    assert_equal(:OBJ_CORE, @topology.get_depth_type(6))
+    if Hwloc::API_VERSION >= Hwloc::API_VERSION_2_0
+      depth = 7
+      core_depth = 5
+    else
+      depth = 8
+      core_depth = 6
+    end
+    assert_equal(depth, @topology.depth)
+    assert_equal(core_depth, @topology.get_type_depth(:OBJ_CORE))
+    assert_equal(:OBJ_CORE, @topology.get_depth_type(core_depth))
     e = assert_raises(Hwloc::TopologyError) {
       @topology.get_depth_type(-1)
     }
@@ -69,17 +76,23 @@ class TopologyTest < BaseTest
     t.ignore_type(:OBJ_CORE)
     t.set_xml('./pilipili2.topo.xml')
     t.load
-    assert_equal(6, t.get_type_or_below_depth(:OBJ_CORE))
-    assert_equal(5, t.get_type_or_above_depth(:OBJ_CORE))
+    depth = 6
+    depth -= 1 if Hwloc::API_VERSION >= Hwloc::API_VERSION_2_0
+    assert_equal(depth, t.get_type_or_below_depth(:OBJ_CORE))
+    assert_equal(depth-1, t.get_type_or_above_depth(:OBJ_CORE))
   end
 
   def test_get_nbobjs
-    assert_equal(12, @topology.get_nbobjs_by_depth(6))
+    depth = 6
+    depth -= 1 if Hwloc::API_VERSION >= Hwloc::API_VERSION_2_0
+    assert_equal(12, @topology.get_nbobjs_by_depth(depth))
     assert_equal(12, @topology.get_nbobjs_by_type(:OBJ_CORE))
   end
 
   def test_each_by_depth
-    assert_equal(12, @topology.each_by_depth(6).count)
+    depth = 6
+    depth -= 1 if Hwloc::API_VERSION >= Hwloc::API_VERSION_2_0
+    assert_equal(12, @topology.each_by_depth(depth).count)
   end
 
   def test_each_by_type
@@ -93,7 +106,11 @@ class TopologyTest < BaseTest
   end
 
   def test_each_obj
-    assert_equal(67, @topology.each.count)
+    if Hwloc::API_VERSION < Hwloc::API_VERSION_2_0 then
+      assert_equal(67, @topology.each.count)
+    else
+      assert_equal(65, @topology.each.count)
+    end
   end
 
 end

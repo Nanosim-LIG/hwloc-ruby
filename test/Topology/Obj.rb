@@ -12,8 +12,13 @@ class ObjTest < BaseTest
     c1 = o.first_child
     c2 = o.last_child
     assert_equal(@topology, c1.topology)
-    assert_equal(:OBJ_NUMANODE, c1.type)
-    assert(c1.is_a_numanode?)
+    if Hwloc::API_VERSION >= Hwloc::API_VERSION_2_0
+      assert_equal(:OBJ_PACKAGE, c1.type)
+      assert(c1.is_a_package?)
+    else
+      assert_equal(:OBJ_NUMANODE, c1.type)
+      assert(c1.is_a_numanode?)
+    end
     assert(!c1.is_a_core?)
     assert_equal([c1, c2], o.children)
     assert_equal(o, c1.parent)
