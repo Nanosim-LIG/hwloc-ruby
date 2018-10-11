@@ -101,10 +101,10 @@ module Hwloc
     attach_function :hwloc_topology_set_custom, [:topology], :int
     attach_function :hwloc_topology_set_distance_matrix, [:topology, :obj_type, :uint, :pointer, :pointer], :int
   else
-    attach_function :hwloc_distances_get, [:topology, :pointer, :pointer, :ulong, :ulong], :int
-    attach_function :hwloc_distances_get_by_depth, [:topology, :uint, :pointer, :pointer, :ulong, :ulong], :int
+    attach_function :hwloc_distances_get, [:topology, :pointer, :pointer, :distances_kind, :ulong], :int
+    attach_function :hwloc_distances_get_by_depth, [:topology, :uint, :pointer, :pointer, :distances_kind, :ulong], :int
     attach_function :hwloc_distances_release, [:topology, Distances.ptr], :void
-    attach_function :hwloc_distances_add, [:topology, :uint, :pointer, :pointer, :ulong, :ulong], :int
+    attach_function :hwloc_distances_add, [:topology, :uint, :pointer, :pointer, :distances_kind, :ulong], :int
     attach_function :hwloc_distances_remove, [:topology], :int
     attach_function :hwloc_distances_remove_by_depth, [:topology, :uint], :int
   end
@@ -488,6 +488,21 @@ module Hwloc
 
     alias traverse each_obj
     alias each each_obj
+
+    if API_VERSION >= API_VERSION_2_0 then
+
+      def distances_number(*kind)
+        res = nil
+        FFI::MemoryPointer::new(:uint) { |nr|
+          nr.write_uint 0
+          err = Hwloc.hwloc_distances_get(@ptr, nr, nil, kind, 0);
+          raise TopologyError if err == -1
+          res = nr.read_uint
+        }
+        res
+      end
+
+    end
 
   end
 
