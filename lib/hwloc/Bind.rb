@@ -147,6 +147,7 @@ module Hwloc
   class Topology
 
     if API_VERSION < API_VERSION_2_0 then
+
       def set_membind_nodeset(nodeset, policy, *flags)
         err = Hwloc.hwloc_set_membind_nodeset(@ptr, nodeset, policy, flags)
         raise MembindError if err == -1
@@ -208,6 +209,51 @@ module Hwloc
           ptr.clear if policy != Hwloc::MEMBIND_FIRSTTOUCH
           return ptr
         end
+      end
+
+    else
+
+      def set_membind_nodeset(nodeset, policy, *flags)
+        flags.push :MEMBIND_BYNODESET
+        set_membind(nodeset, policy, *flags)
+        return self
+      end
+
+      def get_membind_nodeset(*flags)
+        flags.push :MEMBIND_BYNODESET
+        get_membind(*flags)
+      end
+
+      def set_proc_membind_nodeset(pid, nodeset, policy, *flags)
+        flags.push :MEMBIND_BYNODESET
+        set_proc_membind(pid, nodeset, policy, flags)
+        return self
+      end
+
+      def get_proc_membind_nodeset(pid, *flags)
+        flags.push :MEMBIND_BYNODESET
+        get_proc_membind(pid, *flags)
+      end
+
+      def set_area_membind_nodeset(pointer, nodeset, policy, *flags)
+        flags.push :MEMBIND_BYNODESET
+        set_area_membind(pointer, nodeset, policy, *flags)
+        return self
+      end
+
+      def get_area_membind_nodeset(pointer, *flags)
+        flags.push :MEMBIND_BYNODESET
+        get_area_membind(pointer, *flags)
+      end
+
+      def alloc_membind_nodeset(size, nodeset, policy, *flags)
+        flags.push :MEMBIND_BYNODESET
+        alloc_membind(size, nodeset, policy, *flags)
+      end
+
+      def alloc_membind_policy_nodeset(size, nodeset, policy, *flags)
+        flags.push :MEMBIND_BYNODESET
+        alloc_membind_policy_nodeset(size, nodeset, policy, *flags)
       end
 
     end

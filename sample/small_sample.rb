@@ -69,7 +69,7 @@ t.pus.shuffle.first(3).each { |pu|
 #allocate memory on different nodes using hwloc (if you have any)
 if t.numanodes.length > 0 then
   ptrs = t.numanodes.collect { |n|
-    ptr = t.alloc_membind(10*4*1024, n.cpuset, :MEMBIND_BIND)
+    ptr = t.alloc_membind_nodeset(10*4*1024, n.nodeset, :MEMBIND_BIND)
     ptr.clear
   }
   sleep 1
@@ -84,7 +84,7 @@ end
 if t.numanodes.length > 0 then
   ptrs = t.numanodes.collect { |n|
     ptr = FFI::MemoryPointer::new(10*4*1024)
-    t.set_area_membind(ptr, n.cpuset, :MEMBIND_BIND, :MEMBIND_MIGRATE)
+    t.set_area_membind_nodeset(ptr, n.nodeset, :MEMBIND_BIND, :MEMBIND_MIGRATE)
     ptr.clear
   }
   sleep 1
