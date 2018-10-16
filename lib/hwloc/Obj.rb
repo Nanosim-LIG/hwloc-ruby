@@ -138,15 +138,12 @@ module Hwloc
 
       def objs
         arity = self[:nbobjs]
-        if arity == 0 then
-          return []
-        else
-          return self[:objs].read_array_of_pointer(arity).collect { |p|
-            c = Obj::new(p)
-            c.instance_variable_set(:@topology, @topology)
-            c
-          }
-        end
+        return [] if arity == 0
+        return self[:objs].read_array_of_pointer(arity).collect { |p|
+          c = Obj::new(p)
+          c.instance_variable_set(:@topology, @topology)
+          c
+        }
       end
 
       def kind
@@ -165,6 +162,12 @@ module Hwloc
 
       def self.release(ptr)
         Hwloc.hwloc_distances_release(@topology.ptr, ptr)
+      end
+
+      def obj_index(obj)
+        arity = self[:nbobjs]
+        return nil if arity == 0
+        self[:objs].read_array_of_pointer(arity).index(obj.to_ptr)
       end
 
     end
