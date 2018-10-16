@@ -20,6 +20,15 @@ module Hwloc
   attach_function :hwloc_obj_type_string, [:obj_type], :string
   attach_function :hwloc_compare_types, [:obj_type, :obj_type], :int
 
+  if API_VERSION >= API_VERSION_2_0 then
+    attach_function :hwloc_obj_type_is_normal, [:obj_type], :int
+    attach_function :hwloc_obj_type_is_io, [:obj_type], :int
+    attach_function :hwloc_obj_type_is_memory, [:obj_type], :int
+    attach_function :hwloc_obj_type_is_cache, [:obj_type], :int
+    attach_function :hwloc_obj_type_is_dcache, [:obj_type], :int
+    attach_function :hwloc_obj_type_is_icache, [:obj_type], :int
+  end
+
   def self.compare_types(type1, type2)
     return Hwloc.hwloc_compare_types(type1, type2)
   end
@@ -643,6 +652,30 @@ module Hwloc
     if API_VERSION >= API_VERSION_2_0 then
       def is_a_cache?
         (Hwloc::OBJ_L1CACHE..Hwloc::OBJ_L3ICACHE).include?(ObjType[type])
+      end
+
+      def is_normal?
+        Hwloc::hwloc_obj_type_is_normal(ObjType[type]) == 1
+      end
+
+      def is_io?
+        Hwloc::hwloc_obj_type_is_io(ObjType[type]) == 1
+      end
+
+      def is_memory?
+        Hwloc::hwloc_obj_type_is_memory(ObjType[type]) == 1
+      end
+
+      def is_cache?
+        Hwloc::hwloc_obj_type_is_cache(ObjType[type]) == 1
+      end
+
+      def is_icache?
+        Hwloc::hwloc_obj_type_is_icache(ObjType[type]) == 1
+      end
+
+      def is_dcache?
+        Hwloc::hwloc_obj_type_is_dcache(ObjType[type]) == 1
       end
     end
 
