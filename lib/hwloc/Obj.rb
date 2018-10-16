@@ -152,12 +152,8 @@ module Hwloc
 
       def values
         arity = self[:nbobjs]
-        arity *= arity
-        if arity == 0 then
-          return []
-        else
-          return self[:values].read_array_of_uint64(arity)
-        end
+        return [] if arity == 0
+        return self[:values].read_array_of_uint64(arity*arity).each_slice(arity).to_a
       end
 
       def self.release(ptr)
@@ -168,6 +164,14 @@ module Hwloc
         arity = self[:nbobjs]
         return nil if arity == 0
         self[:objs].read_array_of_pointer(arity).index(obj.to_ptr)
+      end
+
+      def obj_pair_values(obj1, obj2)
+        i1 = obj_index(obj1)
+        i2 = obj_index(obj2)
+        return nil unless i1 && i2
+        v = values
+        return [v[i1][i2], v[i2][i1]]
       end
 
     end
