@@ -158,6 +158,11 @@ module Hwloc
           return self[:values].read_array_of_uint64(arity)
         end
       end
+
+      def self.release(ptr)
+        Hwloc.hwloc_distances_release(@topology.ptr, ptr)
+      end
+
     end
   end
 

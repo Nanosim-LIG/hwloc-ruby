@@ -493,13 +493,27 @@ module Hwloc
 
       def distances_number(*kind)
         res = nil
-        FFI::MemoryPointer::new(:uint) { |nr|
-          nr.write_uint 0
-          err = Hwloc.hwloc_distances_get(@ptr, nr, nil, kind, 0);
-          raise TopologyError if err == -1
-          res = nr.read_uint
-        }
+        nr = FFI::MemoryPointer::new(:uint)
+        nr.write_uint 0
+        err = Hwloc.hwloc_distances_get(@ptr, nr, nil, kind, 0);
+        raise TopologyError if err == -1
+        res = nr.read_uint
         res
+      end
+
+      def distances(*kind)
+        num_d = distances_number(*kind)
+        return [] if num_d == 0
+        nr = FFI::MemoryPointer::new(:uint)
+        nr.write_uint num_d
+        dis = FFI::MemoryPointer::new(:pointer, num_d)
+        err = Hwloc.hwloc_distances_get(@ptr, nr, dis, kind, 0);
+        raise TopologyError if err == -1
+        return dis.read_array_of_pointer(nr.read_uint).collect { |p|
+          d = Distances::new(p)
+          d.instance_variable_set(:@topology, self)
+          d
+        }
       end
 
     end
