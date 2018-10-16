@@ -149,6 +149,10 @@ module Hwloc
         end
       end
 
+      def kind
+        self[:kind]
+      end
+
       def values
         arity = self[:nbobjs]
         arity *= arity

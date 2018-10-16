@@ -516,6 +516,31 @@ module Hwloc
         }
       end
 
+      def distances_by_depth(depth, *kind)
+        nr = FFI::MemoryPointer::new(:uint)
+        nr.write_uint 0
+        err = Hwloc.hwloc_distances_get_by_depth(@ptr, depth, nr, nil, kind, 0);
+        raise TopologyError if err == -1
+        num_d = nr.read_uint
+        return [] if num_d == 0
+        dis = FFI::MemoryPointer::new(:pointer, num_d)
+        err = Hwloc.hwloc_distances_get_by_depth(@ptr, depth, nr, dis, kind, 0);
+        return dis.read_array_of_pointer(nr.read_uint).collect { |p|
+          d = Distances::new(p)
+          d.instance_variable_set(:@topology, self)
+          d
+        }
+      end
+
+      def distances_by_type(type, *kind)
+        depth = get_type_depth(type)
+        return [] if depth == Hwloc::TYPE_DEPTH_UNKNOWN
+        if depth == Hwloc::TYPE_DEPTH_MULTIPLE then
+          depth_list = each_obj.select{ |e| e.type == type }.collect{ |e| e.depth }.uniq
+          return depth_list.collect { |d| distances_by_depth(d, *kind) }.reduce(:+)
+        end
+        return distances_by_depth(depth, *kind)
+      end
     end
 
   end
