@@ -563,15 +563,15 @@ module Hwloc
         self
       end
 
-      def hwloc_distances_remove_by_depth(depth)
+      def distances_remove_by_depth(depth)
         err = Hwloc.hwloc_distances_remove_by_depth(@ptr, depth)
         raise TopologyError if err == -1
         self
       end
 
-      def hwloc_distances_remove_by_type(type)
+      def distances_remove_by_type(type)
         depth = get_type_depth(type)
-        return self if depth == HWLOC_TYPE_DEPTH_UNKNOWN
+        return self if depth == Hwloc::TYPE_DEPTH_UNKNOWN
         if depth == Hwloc::TYPE_DEPTH_MULTIPLE then
           depth_list = each_obj.select{ |e| e.type == type }.collect{ |e| e.depth }.uniq
           depth_list.each { |d| hwloc_distances_remove_by_depth(d) }
