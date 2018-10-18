@@ -574,10 +574,10 @@ module Hwloc
         return self if depth == Hwloc::TYPE_DEPTH_UNKNOWN
         if depth == Hwloc::TYPE_DEPTH_MULTIPLE then
           depth_list = each_obj.select{ |e| e.type == type }.collect{ |e| e.depth }.uniq
-          depth_list.each { |d| hwloc_distances_remove_by_depth(d) }
+          depth_list.each { |d| distances_remove_by_depth(d) }
           return self
         end
-        return hwloc_distances_remove_by_depth(depth)
+        return distances_remove_by_depth(depth)
       end
 
     end
