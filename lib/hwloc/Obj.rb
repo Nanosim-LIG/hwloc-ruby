@@ -134,7 +134,7 @@ module Hwloc
       :DISTANCES_KIND_MEANS_BANDWIDTH
     ])
 
-    DistancesAddFlag = bitmask(FFI::find_type(:ulong), :distances_flag, [
+    DistancesAddFlag = bitmask(FFI::find_type(:ulong), :distances_add_flag, [
       :DISTANCES_ADD_FLAG_GROUP,
       :DISTANCES_ADD_FLAG_GROUP_INACCURATE
     ])
