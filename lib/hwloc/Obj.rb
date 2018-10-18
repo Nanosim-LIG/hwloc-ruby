@@ -677,6 +677,10 @@ module Hwloc
       def is_dcache?
         Hwloc::hwloc_obj_type_is_dcache(ObjType[type]) == 1
       end
+
+      def is_misc?
+        ObjType[type] == Hwloc::OBJ_MISC
+      end
     end
 
   end

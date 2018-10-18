@@ -544,6 +544,19 @@ module Hwloc
         return distances_by_depth(depth, *kind)
       end
 
+      def distances_add(objs, values, *kind, flags: [])
+        nbobjs = objs.size
+        vals = values.flatten
+        raise TopologyError if vals.length != nbobjs * nbobjs
+        vals_p = FFI::MemoryPointer::new(:uint64, vals.length)
+        vals_p.write_array_of_uint64(vals)
+        objs_p = FFI::MemoryPointer::new(:pointer, objs.length)
+        objs_p.write_array_of_pointer(objs.collect(&:to_ptr))
+        err = Hwloc.hwloc_distances_add(@ptr, nbobjs, objs_p, vals_p, kind, flags)
+        raise TopologyError if err == -1
+        self
+      end
+
     end
 
   end
