@@ -619,7 +619,7 @@ module Hwloc
 
     def add_infos(**dict)
       dict.each { |k, v|
-        err = Hwloc.hwloc_obj_add_info(self, k, v)
+        err = Hwloc.hwloc_obj_add_info(self, k.to_s, v.to_s)
         raise EditionError if err == -1
       }
       self

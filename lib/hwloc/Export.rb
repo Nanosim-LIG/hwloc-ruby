@@ -1,3 +1,5 @@
+require 'stringio'
+
 module Hwloc
 
   if API_VERSION < API_VERSION_2_0 then
@@ -64,6 +66,15 @@ module Hwloc
         xmlbuffer_p = data_p.read_pointer.slice(0, count_p.read_int)
         return FFI::AutoPointer::new(xmlbuffer_p, self.method(:free_xmlbuffer))
       end
+    end
+
+    def to_xml(flags = 0)
+      a = if API_VERSION >= API_VERSION_2_0
+        export_xmlbuffer(flags)
+      else
+        export_xmlbuffer
+      end
+      a.read_string
     end
 
     def free_xmlbuffer(pointer)
