@@ -317,6 +317,7 @@ module Hwloc
 
   attach_function :hwloc_obj_type_snprintf, [:pointer, :size_t, Obj.ptr, :int], :int
   attach_function :hwloc_obj_attr_snprintf, [:pointer, :size_t, Obj.ptr, :string, :int], :int
+  attach_function :hwloc_obj_add_info, [Obj.ptr, :string, :string], :int
 
   class Obj
     if API_VERSION < API_VERSION_2_0 then
@@ -603,20 +604,25 @@ module Hwloc
 
     def infos
       infos_count = self[:infos_count]
-      if infos_count == 0 then
-        return []
-      else
-        inf_array = infos_count.times.collect { |i|
-          o = ObjInfo::new(self[:infos] + i*ObjInfo.size)
-        }
-	inf_h = {}
-	inf_array.each { |e| inf_h[e[:name].to_sym] = e[:value] if e[:name] }
-	return inf_h
-      end
+      return {} if infos_count == 0
+      inf_array = infos_count.times.collect { |i|
+        o = ObjInfo::new(self[:infos] + i*ObjInfo.size)
+      }
+      inf_h = {}
+      inf_array.each { |e| inf_h[e[:name].to_sym] = e[:value] if e[:name] }
+      return inf_h
     end
 
     def each_info(*args, &block)
       return infos.each(*args, &block)
+    end
+
+    def add_infos(**dict)
+      dict.each { |k, v|
+        err = Hwloc.hwloc_obj_add_info(self, k, v)
+        raise EditionError if err == -1
+      }
+      self
     end
 
     def attr
@@ -633,7 +639,7 @@ module Hwloc
       when :OBJ_OS_DEVICE
         return at[:osdev]
       else
-	if API_VERSION >= API_VERSION_2_0 then
+        if API_VERSION >= API_VERSION_2_0 then
           return at[:numanode] if t == :OBJ_NUMANODE
         end
         return at[:cache] if self.is_a_cache?
