@@ -182,6 +182,13 @@ module Hwloc
           err = Hwloc.hwloc_topology_dup(ptr, arg.ptr)
           raise TopologyError if err == -1
           @ptr = FFI::AutoPointer::new( ptr.read_pointer, Hwloc.method(:hwloc_topology_destroy) )
+        elsif arg.kind_of?( String ) then
+          ptr = FFI::MemoryPointer::new( :pointer )
+          err = Hwloc.hwloc_topology_init(ptr)
+          raise TopologyError if err == -1
+          @ptr = FFI::AutoPointer::new( ptr.read_pointer, Hwloc.method(:hwloc_topology_destroy) )
+          @xml_buffer = FFI::MemoryPointer::from_string(arg)
+          set_xmlbuffer(@xml_buffer)
         else
           raise TopologyError, "Invalid argument"
         end
@@ -193,6 +200,7 @@ module Hwloc
     def load
       err = Hwloc.hwloc_topology_load(@ptr)
       raise TopologyError if err == -1
+      @xml_buffer = nil if @xml_buffer
       return self
     end
 
