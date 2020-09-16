@@ -7,7 +7,6 @@ Gem::Specification.new do |s|
   s.summary = "hwloc ruby bindings"
   s.description = "hwloc ruby bindings for versions 1.10 onward"
   s.files = Dir['hwloc.gemspec', 'LICENSE', 'README.md', 'lib/**/*']
-  s.has_rdoc = false
   s.license = 'BSD-2-Clause'
   s.required_ruby_version = '>= 1.9.3'
   s.add_dependency 'ffi', '~> 1.9', '>=1.9.3'
